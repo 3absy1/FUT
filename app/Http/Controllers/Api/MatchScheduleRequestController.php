@@ -85,6 +85,34 @@ class MatchScheduleRequestController extends Controller
     }
 
     /**
+     * Nearby pending requests that are still unpaired (no opponent yet).
+     * Uses user.area_id by default, or accepts ?area_id=
+     */
+    public function nearbyPendingUnpaired(RecentMatchRequestsRequest $request): JsonResponse
+    {
+        $areaId = $request->validated()['area_id'] ?? $request->user()->area_id;
+
+        if (! $areaId) {
+            return $this->error(
+                'match_schedule_request.area_required',
+                'error',
+                'AREA_REQUIRED',
+                [__('api.match_schedule_request.area_required')],
+                422
+            );
+        }
+
+        $requests = $this->matchScheduleRequestRepository->nearbyPendingUnpairedByArea(
+            $request->user(),
+            (int) $areaId
+        );
+
+        return $this->success([
+            'requests' => MatchScheduleRequestResource::collection($requests),
+        ]);
+    }
+
+    /**
      * Opponent team joins an existing request from home page.
      */
     public function join(

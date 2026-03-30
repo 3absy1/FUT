@@ -4,7 +4,7 @@ namespace App\Repositories\MatchScheduleRequest;
 
 use App\Models\Club;
 use App\Models\ClubMember;
-use App\Models\Friendship;
+use App\Models\Friend;
 use App\Models\GameMatch;
 use App\Models\MatchScheduleRequest;
 use App\Models\MatchScheduleRequestPlayer;
@@ -185,6 +185,21 @@ class MatchScheduleRequestRepository implements MatchScheduleRequestRepositoryIn
             ->whereNull('stadium_id') // not yet taken by a stadium
             ->where('status', 'pending')
             ->with(['club', 'opponentClub', 'area', 'requestedBy', 'players.user', 'slots', 'matchedSlot'])
+            ->latest()
+            ->paginate(10);
+    }
+
+    public function nearbyPendingUnpairedByArea(User $actor, int $areaId): LengthAwarePaginator
+    {
+        return MatchScheduleRequest::query()
+            ->where('area_id', $areaId)
+            ->where('status', 'pending')
+            ->whereNull('opponent_club_id')
+            ->whereNull('matched_slot_id')
+            ->whereNull('stadium_id')
+            ->whereNull('match_id')
+            ->where('requested_by_user_id', '!=', $actor->id)
+            ->with(['club', 'area', 'requestedBy', 'players.user', 'slots'])
             ->latest()
             ->paginate(10);
     }
@@ -388,18 +403,9 @@ class MatchScheduleRequestRepository implements MatchScheduleRequestRepositoryIn
 
     private function acceptedFriendIds(int $userId)
     {
-        return Friendship::query()
-            ->selectRaw("
-                CASE
-                    WHEN user_id = ? THEN friend_id
-                    ELSE user_id
-                END as friend_user_id
-            ", [$userId])
-            ->where('status', 'accepted')
-            ->where(function ($q) use ($userId) {
-                $q->where('user_id', $userId)->orWhere('friend_id', $userId);
-            })
-            ->pluck('friend_user_id');
+        return Friend::query()
+            ->where('user_id', $userId)
+            ->pluck('friend_id');
     }
 }
 

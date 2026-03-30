@@ -8,7 +8,6 @@ use App\Http\Requests\Friendship\UserSearchRequest;
 use App\Http\Resources\FriendshipRequestResource;
 use App\Http\Resources\UserResource;
 use App\Http\Traits\ApiResponseTrait;
-use App\Models\Friendship;
 use App\Repositories\Friendship\FriendshipRepositoryInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -81,21 +80,37 @@ class FriendshipController extends Controller
         ]);
     }
 
-    public function accept(Request $request, Friendship $friendship): JsonResponse
+    public function accept(Request $request, int $friendUserId): JsonResponse
     {
-        $friendship = $this->friendshipRepository->accept($request->user(), $friendship);
+        $friendship = $this->friendshipRepository->accept($request->user(), $friendUserId);
 
         return $this->success([
             'friend_request' => new FriendshipRequestResource($friendship),
         ], 'friendship.request_accepted');
     }
 
-    /**
-     * Cancel (if outgoing), decline (if incoming), or unfriend (if accepted).
-     */
-    public function destroy(Request $request, Friendship $friendship): JsonResponse
+    public function reject(Request $request, int $friendUserId): JsonResponse
     {
-        $this->friendshipRepository->delete($request->user(), $friendship);
+        $friendship = $this->friendshipRepository->reject($request->user(), $friendUserId);
+
+        return $this->success([
+            'friend_request' => new FriendshipRequestResource($friendship),
+        ], 'friendship.request_rejected');
+    }
+
+    /**
+     * Cancel outgoing or decline incoming (pending only).
+     */
+    public function cancelOrDecline(Request $request, int $friendUserId): JsonResponse
+    {
+        $this->friendshipRepository->cancelOrDecline($request->user(), $friendUserId);
+
+        return $this->success([], 'friendship.deleted');
+    }
+
+    public function unfriend(Request $request, int $friendUserId): JsonResponse
+    {
+        $this->friendshipRepository->unfriend($request->user(), $friendUserId);
 
         return $this->success([], 'friendship.deleted');
     }

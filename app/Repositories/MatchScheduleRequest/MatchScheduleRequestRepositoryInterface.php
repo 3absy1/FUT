@@ -16,6 +16,8 @@ interface MatchScheduleRequestRepositoryInterface
 
     public function recentByArea(User $actor, int $areaId): LengthAwarePaginator;
 
+    public function nearbyPendingUnpairedByArea(User $actor, int $areaId): LengthAwarePaginator;
+
     public function join(
         User $actor,
         MatchScheduleRequest $request,

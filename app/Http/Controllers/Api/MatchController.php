@@ -9,6 +9,7 @@ use App\Http\Traits\ApiResponseTrait;
 use App\Models\GameMatch;
 use App\Repositories\Match\MatchRepositoryInterface;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class MatchController extends Controller
 {
@@ -17,6 +18,18 @@ class MatchController extends Controller
     public function __construct(
         private MatchRepositoryInterface $matchRepository
     ) {}
+
+    /**
+     * Get current match for authenticated user (nullable).
+     */
+    public function current(Request $request): JsonResponse
+    {
+        $match = $this->matchRepository->currentForUser($request->user());
+
+        return $this->success([
+            'match' => $match ? new MatchResource($match) : null,
+        ]);
+    }
 
     /**
      * Stadium owner records match result (winner + scores).

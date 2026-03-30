@@ -19,6 +19,24 @@ class MatchRepository implements MatchRepositoryInterface
     private const CLUB_LOSE_EXP = 10;
     private const CLUB_DRAW_EXP = 20;
 
+    public function currentForUser(User $user): ?GameMatch
+    {
+        return GameMatch::query()
+            ->whereIn('status', ['ongoing', 'scheduled'])
+            ->whereExists(function ($query) use ($user) {
+                $query->selectRaw('1')
+                    ->from('match_players')
+                    ->whereColumn('match_players.match_id', 'matches.id')
+                    ->where('match_players.user_id', $user->id)
+                    ->where('match_players.is_playing', true);
+            })
+            // Prefer ongoing first, then nearest scheduled one.
+            ->orderByRaw("CASE WHEN status = 'ongoing' THEN 0 ELSE 1 END")
+            ->orderBy('scheduled_datetime')
+            ->with(['clubA', 'clubB', 'stadium'])
+            ->first();
+    }
+
     public function recordResult(
         User $owner,
         GameMatch $match,

@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Friend;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -14,6 +15,9 @@ class UserResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $division = method_exists($this->resource, 'currentDivision')
+            ? $this->currentDivision()
+            : null;
         $level = $this->currentLevel();
 
         return [
@@ -27,13 +31,21 @@ class UserResource extends JsonResource
             'rating' => $this->rating,
             'wallet_balance' => $this->wallet_balance,
             'exp' => $this->exp,
-            'level' => $level ? [
-                'id' => $level->id,
-                'name' => $level->name,
-                'min_points' => $level->min_points,
-                'max_points' => $level->max_points,
-                'sort_order' => $level->sort_order,
+            'friends_count' => Friend::query()->where('user_id', $this->id)->count(),
+            'division' => $division ? [
+                'id' => $division->id,
+                'name' => $division->name,
+                'matches_count' => $division->matches_count,
+                'checkpoints' => $division->checkpoints,
+                'sort_order' => $division->sort_order,
             ] : null,
+            // 'level' => $level ? [
+            //     'id' => $level->id,
+            //     'name' => $level->name,
+            //     'matches_count' => $level->matches_count,
+            //     'checkpoints' => $level->checkpoints,
+            //     'sort_order' => $level->sort_order,
+            // ] : null,
             'fcm_token' => $this->fcm_token,
             'is_notification' => $this->is_notification,
             'created_at' => $this->created_at?->toIso8601String(),

@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Level extends Model
+class Division extends Model
 {
     protected $table = 'levels';
 
@@ -19,3 +19,4 @@ class Level extends Model
         ];
     }
 }
+

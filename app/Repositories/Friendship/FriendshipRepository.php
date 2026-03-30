@@ -2,9 +2,11 @@
 
 namespace App\Repositories\Friendship;
 
-use App\Models\Friendship;
+use App\Models\Friend;
+use App\Models\FriendRequest;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class FriendshipRepository implements FriendshipRepositoryInterface
@@ -23,7 +25,7 @@ class FriendshipRepository implements FriendshipRepositoryInterface
             ->paginate(10);
     }
 
-    public function sendRequest(User $requester, int $friendUserId): Friendship
+    public function sendRequest(User $requester, int $friendUserId): FriendRequest
     {
         if ($requester->id === $friendUserId) {
             throw ValidationException::withMessages([
@@ -32,94 +34,176 @@ class FriendshipRepository implements FriendshipRepositoryInterface
         }
 
         $friend = User::findOrFail($friendUserId);
+        $requesterId = (int) $requester->id;
+        $otherUserId = (int) $friend->id;
 
-        [$userId, $friendId] = $this->canonicalPair($requester->id, $friend->id);
+        $alreadyFriends = Friend::query()
+            ->where('user_id', $requesterId)
+            ->where('friend_id', $otherUserId)
+            ->exists();
 
-        $existing = Friendship::where('user_id', $userId)
-            ->where('friend_id', $friendId)
-            ->first();
-
-        if ($existing) {
-            if ($existing->status === 'pending') {
-                throw ValidationException::withMessages([
-                    'friend_user_id' => [__('api.friendship.request_already_pending')],
-                ]);
-            }
-            if ($existing->status === 'accepted') {
-                throw ValidationException::withMessages([
-                    'friend_user_id' => [__('api.friendship.already_friends')],
-                ]);
-            }
-            if ($existing->status === 'blocked') {
-                throw ValidationException::withMessages([
-                    'friend_user_id' => [__('api.friendship.cannot_request')],
-                ]);
-            }
+        if ($alreadyFriends) {
+            throw ValidationException::withMessages([
+                'friend_user_id' => [__('api.friendship.already_friends')],
+            ]);
         }
 
-        return Friendship::create([
-            'user_id' => $userId,
-            'friend_id' => $friendId,
-            'requested_by_user_id' => $requester->id,
-            'status' => 'pending',
-        ]);
+        $incomingPending = FriendRequest::query()
+            ->where('sender_user_id', $otherUserId)
+            ->where('receiver_user_id', $requesterId)
+            ->where('status', 'pending')
+            ->exists();
+
+        if ($incomingPending) {
+            throw ValidationException::withMessages([
+                'friend_user_id' => [__('api.friendship.request_already_pending')],
+            ]);
+        }
+
+        return FriendRequest::updateOrCreate(
+            ['sender_user_id' => $requesterId, 'receiver_user_id' => $otherUserId],
+            [
+                'status' => 'pending',
+                'accepted_at' => null,
+                'rejected_at' => null,
+            ]
+        );
     }
 
-    public function accept(User $actor, Friendship $friendship): Friendship
+    public function accept(User $actor, int $friendUserId): FriendRequest
     {
-        if ($friendship->status !== 'pending') {
+        $actorId = (int) $actor->id;
+        $friendUserId = (int) $friendUserId;
+
+        $incoming = FriendRequest::query()
+            ->where('sender_user_id', $friendUserId)
+            ->where('receiver_user_id', $actorId)
+            ->firstOrFail();
+
+        if ($incoming->status !== 'pending') {
             throw ValidationException::withMessages([
                 'friendship' => [__('api.friendship.not_pending')],
             ]);
         }
 
-        if ($friendship->requested_by_user_id === $actor->id) {
-            throw ValidationException::withMessages([
-                'friendship' => [__('api.friendship.cannot_accept_own_request')],
-            ]);
-        }
+        return DB::transaction(function () use ($actorId, $friendUserId) {
+            $now = now();
 
-        if (! $this->isParticipant($actor->id, $friendship)) {
-            throw ValidationException::withMessages([
-                'friendship' => [__('api.friendship.not_allowed')],
-            ]);
-        }
+            Friend::updateOrCreate(
+                ['user_id' => $actorId, 'friend_id' => $friendUserId],
+                ['updated_at' => $now, 'created_at' => $now]
+            );
 
-        $friendship->update([
-            'status' => 'accepted',
-            'accepted_at' => now(),
-            'rejected_at' => null,
-        ]);
+            Friend::updateOrCreate(
+                ['user_id' => $friendUserId, 'friend_id' => $actorId],
+                ['updated_at' => $now, 'created_at' => $now]
+            );
 
-        return $friendship->fresh();
+            FriendRequest::query()
+                ->where('sender_user_id', $friendUserId)
+                ->where('receiver_user_id', $actorId)
+                ->update([
+                    'status' => 'accepted',
+                    'accepted_at' => $now,
+                    'rejected_at' => null,
+                    'updated_at' => $now,
+                ]);
+
+            FriendRequest::query()
+                ->where('sender_user_id', $actorId)
+                ->where('receiver_user_id', $friendUserId)
+                ->delete();
+
+            return FriendRequest::query()
+                ->where('sender_user_id', $friendUserId)
+                ->where('receiver_user_id', $actorId)
+                ->firstOrFail();
+        });
     }
 
-    public function delete(User $actor, Friendship $friendship): void
+    public function reject(User $actor, int $friendUserId): FriendRequest
     {
-        if (! $this->isParticipant($actor->id, $friendship)) {
+        $actorId = (int) $actor->id;
+        $friendUserId = (int) $friendUserId;
+
+        $incoming = FriendRequest::query()
+            ->where('sender_user_id', $friendUserId)
+            ->where('receiver_user_id', $actorId)
+            ->firstOrFail();
+
+        if ($incoming->status !== 'pending') {
             throw ValidationException::withMessages([
-                'friendship' => [__('api.friendship.not_allowed')],
+                'friendship' => [__('api.friendship.not_pending')],
             ]);
         }
 
-        $friendship->delete();
+        return DB::transaction(function () use ($incoming) {
+            $now = now();
+
+            $incoming->update([
+                'status' => 'rejected',
+                'rejected_at' => $now,
+                'accepted_at' => null,
+            ]);
+
+            return $incoming->fresh();
+        });
+    }
+
+    public function cancelOrDecline(User $actor, int $friendUserId): void
+    {
+        $actorId = (int) $actor->id;
+        $friendUserId = (int) $friendUserId;
+
+        $row = FriendRequest::query()
+            ->where(function ($q) use ($actorId, $friendUserId) {
+                $q->where('sender_user_id', $actorId)->where('receiver_user_id', $friendUserId);
+            })
+            ->orWhere(function ($q) use ($actorId, $friendUserId) {
+                $q->where('sender_user_id', $friendUserId)->where('receiver_user_id', $actorId);
+            })
+            ->firstOrFail();
+
+        if ($row->status !== 'pending') {
+            throw ValidationException::withMessages([
+                'friendship' => [__('api.friendship.not_pending')],
+            ]);
+        }
+
+        $row->delete();
+    }
+
+    public function unfriend(User $actor, int $friendUserId): void
+    {
+        $actorId = (int) $actor->id;
+        $friendUserId = (int) $friendUserId;
+
+        $row = Friend::query()
+            ->where('user_id', $actorId)
+            ->where('friend_id', $friendUserId)
+            ->firstOrFail();
+        unset($row);
+
+        DB::transaction(function () use ($actorId, $friendUserId) {
+            Friend::query()
+                ->where('user_id', $actorId)
+                ->where('friend_id', $friendUserId)
+                ->delete();
+
+            Friend::query()
+                ->where('user_id', $friendUserId)
+                ->where('friend_id', $actorId)
+                ->delete();
+        });
     }
 
     public function listFriends(User $user, ?string $q = null): LengthAwarePaginator
     {
-        $userId = $user->id;
+        $userId = (int) $user->id;
 
-        $friendIdsQuery = Friendship::query()
-            ->selectRaw("
-                CASE
-                    WHEN user_id = ? THEN friend_id
-                    ELSE user_id
-                END as friend_user_id
-            ", [$userId])
-            ->where('status', 'accepted')
-            ->where(function ($query) use ($userId) {
-                $query->where('user_id', $userId)->orWhere('friend_id', $userId);
-            });
+        $friendIdsQuery = Friend::query()
+            ->select('friend_id')
+            ->where('user_id', $userId);
 
         return User::query()
             ->whereIn('id', $friendIdsQuery)
@@ -136,42 +220,26 @@ class FriendshipRepository implements FriendshipRepositoryInterface
 
     public function listIncomingRequests(User $user): LengthAwarePaginator
     {
-        $userId = $user->id;
+        $userId = (int) $user->id;
 
-        return Friendship::query()
+        return FriendRequest::query()
             ->where('status', 'pending')
-            ->where('requested_by_user_id', '!=', $userId)
-            ->where(function ($query) use ($userId) {
-                $query->where('user_id', $userId)->orWhere('friend_id', $userId);
-            })
-            ->with(['requestedBy', 'user', 'friend'])
+            ->where('receiver_user_id', $userId)
+            ->with(['sender', 'receiver'])
             ->latest()
             ->paginate(10);
     }
 
     public function listOutgoingRequests(User $user): LengthAwarePaginator
     {
-        $userId = $user->id;
+        $userId = (int) $user->id;
 
-        return Friendship::query()
+        return FriendRequest::query()
             ->where('status', 'pending')
-            ->where('requested_by_user_id', $userId)
-            ->where(function ($query) use ($userId) {
-                $query->where('user_id', $userId)->orWhere('friend_id', $userId);
-            })
-            ->with(['requestedBy', 'user', 'friend'])
+            ->where('sender_user_id', $userId)
+            ->with(['sender', 'receiver'])
             ->latest()
             ->paginate(10);
-    }
-
-    private function canonicalPair(int $a, int $b): array
-    {
-        return $a < $b ? [$a, $b] : [$b, $a];
-    }
-
-    private function isParticipant(int $userId, Friendship $friendship): bool
-    {
-        return $friendship->user_id === $userId || $friendship->friend_id === $userId;
     }
 }
 

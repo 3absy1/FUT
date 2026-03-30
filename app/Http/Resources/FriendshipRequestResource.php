@@ -2,12 +2,12 @@
 
 namespace App\Http\Resources;
 
-use App\Models\Friendship;
+use App\Models\FriendRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @mixin Friendship
+ * @mixin FriendRequest
  */
 class FriendshipRequestResource extends JsonResource
 {
@@ -16,15 +16,13 @@ class FriendshipRequestResource extends JsonResource
         return [
             'id' => $this->id,
             'status' => $this->status,
-            'requested_by_user_id' => $this->requested_by_user_id,
-            'user_id' => $this->user_id,
-            'friend_id' => $this->friend_id,
+            'sender_user_id' => $this->sender_user_id,
+            'receiver_user_id' => $this->receiver_user_id,
             'accepted_at' => $this->accepted_at?->toIso8601String(),
             'rejected_at' => $this->rejected_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
-            'requested_by' => new UserResource($this->whenLoaded('requestedBy')),
-            'user' => new UserResource($this->whenLoaded('user')),
-            'friend' => new UserResource($this->whenLoaded('friend')),
+            'sender' => new UserResource($this->whenLoaded('sender')),
+            'receiver' => new UserResource($this->whenLoaded('receiver')),
         ];
     }
 }

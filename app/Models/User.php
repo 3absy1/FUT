@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -28,6 +29,9 @@ class User extends Authenticatable
         'is_stadium_owner',
         'stadium_id',
         'exp',
+        'division_id',
+        'division_current_match',
+        'division_last_checkpoint_match',
         'fcm_token',
         'is_notification',
     ];
@@ -51,6 +55,9 @@ class User extends Authenticatable
             'is_stadium_owner' => 'boolean',
             'stadium_id' => 'integer',
             'exp' => 'integer',
+            'division_id' => 'integer',
+            'division_current_match' => 'integer',
+            'division_last_checkpoint_match' => 'integer',
             'is_notification' => 'boolean',
         ];
     }
@@ -80,12 +87,25 @@ class User extends Authenticatable
         return $this->hasMany(PlayerRanking::class);
     }
 
+    public function division(): BelongsTo
+    {
+        return $this->belongsTo(Division::class, 'division_id');
+    }
+
     /**
-     * Get the level tier for the user's current exp.
+     * Backward compatibility for older clients/code.
      */
     public function currentLevel(): ?Level
     {
-        return Level::forExp((int) $this->exp);
+        if (! $this->division_id) {
+            return null;
+        }
+        return Level::query()->find($this->division_id);
+    }
+
+    public function currentDivision(): ?Division
+    {
+        return $this->division;
     }
 
     public function acceptsDummyOtp(string $code): bool

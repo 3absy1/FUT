@@ -29,12 +29,17 @@ Route::middleware(['api.lang', 'api.key'])->group(function () {
         // Friendships (friend cycle)
         Route::get('users/search', [FriendshipController::class, 'searchUsers']);
         Route::prefix('friends')->group(function () {
-            Route::get('/', [FriendshipController::class, 'index']); // optional q=
+            // Friends
+            Route::get('/', [FriendshipController::class, 'index']);
+            Route::delete('unFriend/{friendUserId}', [FriendshipController::class, 'unfriend']);
+
+            // Friend requests
             Route::post('requests', [FriendshipController::class, 'sendRequest']);
             Route::get('requests/incoming', [FriendshipController::class, 'incoming']);
             Route::get('requests/outgoing', [FriendshipController::class, 'outgoing']);
-            Route::post('requests/{friendship}/accept', [FriendshipController::class, 'accept']);
-            Route::delete('requests/{friendship}', [FriendshipController::class, 'destroy']);
+            Route::post('requests/{friendUserId}/accept', [FriendshipController::class, 'accept']);
+            Route::post('requests/{friendUserId}/reject', [FriendshipController::class, 'reject']);
+            Route::delete('requests/{friendUserId}', [FriendshipController::class, 'cancelOrDecline']);
         });
 
         // Club roster (select from club) and invitations
@@ -46,6 +51,7 @@ Route::middleware(['api.lang', 'api.key'])->group(function () {
 
         // Match schedule requests (assemble squad + multi schedule slots)
         Route::get('match-schedule-requests/recent', [MatchScheduleRequestController::class, 'recent']);
+        Route::get('match-schedule-requests/nearby-pending-unpaired', [MatchScheduleRequestController::class, 'nearbyPendingUnpaired']);
         Route::get('match-schedule-requests', [MatchScheduleRequestController::class, 'index']);
         Route::post('match-schedule-requests', [MatchScheduleRequestController::class, 'store']);
         Route::get('match-schedule-requests/{matchScheduleRequest}', [MatchScheduleRequestController::class, 'show']);
@@ -53,6 +59,7 @@ Route::middleware(['api.lang', 'api.key'])->group(function () {
         Route::post('match-schedule-requests/{matchScheduleRequest}/accept-by-stadium', [MatchScheduleRequestController::class, 'acceptByStadium']);
 
         // Matches (record result by stadium owner)
+        Route::get('matches/current', [MatchController::class, 'current']);
         Route::post('matches/{match}/record-result', [MatchController::class, 'recordResult']);
 
         });

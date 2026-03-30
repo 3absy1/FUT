@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Tournament extends Model
 {
     protected $fillable = [
-        'name', 'stadium_id', 'start_date', 'end_date',
+        'name', 'stadium_id', 'min_division_id', 'start_date', 'end_date',
         'max_teams', 'entry_fee_per_team', 'status',
     ];
 
@@ -25,6 +25,11 @@ class Tournament extends Model
     public function stadium(): BelongsTo
     {
         return $this->belongsTo(Stadium::class);
+    }
+
+    public function minDivision(): BelongsTo
+    {
+        return $this->belongsTo(Division::class, 'min_division_id');
     }
 
     public function matches(): HasMany

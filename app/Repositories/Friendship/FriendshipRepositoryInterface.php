@@ -2,7 +2,7 @@
 
 namespace App\Repositories\Friendship;
 
-use App\Models\Friendship;
+use App\Models\FriendRequest;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
@@ -10,11 +10,15 @@ interface FriendshipRepositoryInterface
 {
     public function searchUsers(string $q, int $excludeUserId): LengthAwarePaginator;
 
-    public function sendRequest(User $requester, int $friendUserId): Friendship;
+    public function sendRequest(User $requester, int $friendUserId): FriendRequest;
 
-    public function accept(User $actor, Friendship $friendship): Friendship;
+    public function accept(User $actor, int $friendUserId): FriendRequest;
 
-    public function delete(User $actor, Friendship $friendship): void;
+    public function reject(User $actor, int $friendUserId): FriendRequest;
+
+    public function cancelOrDecline(User $actor, int $friendUserId): void;
+
+    public function unfriend(User $actor, int $friendUserId): void;
 
     public function listFriends(User $user, ?string $q = null): LengthAwarePaginator;
 

@@ -7,6 +7,8 @@ use App\Models\User;
 
 interface MatchRepositoryInterface
 {
+    public function currentForUser(User $user): ?GameMatch;
+
     public function recordResult(
         User $owner,
         GameMatch $match,
