@@ -1,9 +1,12 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\AreaController;
 use App\Http\Controllers\Api\ClubController;
 use App\Http\Controllers\Api\ClubMemberController;
 use App\Http\Controllers\Api\ClubRosterController;
+use App\Http\Controllers\Api\ConfigController;
+use App\Http\Controllers\Api\DivisionController;
 use App\Http\Controllers\Api\MatchController;
 use App\Http\Controllers\Api\MatchScheduleRequestController;
 use App\Http\Controllers\Api\StadiumController;
@@ -24,6 +27,9 @@ Route::middleware(['api.lang', 'api.key'])->group(function () {
         Route::put('update-profile', [UserController::class, 'updateProfile']);
 
         Route::apiResource('stadiums', StadiumController::class);
+        Route::apiResource('configs', ConfigController::class);
+        Route::apiResource('areas', AreaController::class);
+        Route::apiResource('divisions', DivisionController::class);
         Route::apiResource('clubs', ClubController::class);
 
         // Friendships (friend cycle)
