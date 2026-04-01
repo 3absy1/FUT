@@ -20,11 +20,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (\Illuminate\Validation\ValidationException $e, $request) {
             if ($request->is('api/*')) {
+                $errors = collect($e->errors())->flatten();
                 return response()->json([
-                    'message' => __('api.validation_failed'),
+                    'message' => $errors->first(),
                     'title' => __('api.error'),
-                    'code' => 'VALIDATION',
-                    'errorsList' => collect($e->errors())->flatten()->values()->all(),
+                    'code' => 422,
+                    'errorsList' => $errors->values()->all(),
                 ], $e->status);
             }
         });
