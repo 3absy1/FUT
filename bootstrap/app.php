@@ -22,8 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->is('api/*')) {
                 $errors = collect($e->errors())->flatten();
                 return response()->json([
+                    'title' => class_basename($e),
                     'message' => $errors->first(),
-                    'title' => __('api.error'),
                     'code' => 422,
                     'errorsList' => $errors->values()->all(),
                 ], $e->status);
