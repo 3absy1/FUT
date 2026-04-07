@@ -27,7 +27,10 @@ class DivisionSeeder extends Seeder
             Division::updateOrCreate(
                 ['sort_order' => $division],
                 [
-                    'name' => "Division {$division}",
+                    'name' => [
+                        'en' => "Division {$division}",
+                        'ar' => "الدرجة {$division}",
+                    ],
                     'matches_count' => 10,
                     'checkpoints' => $checkpointMap[$division],
                 ]

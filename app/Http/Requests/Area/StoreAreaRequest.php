@@ -11,10 +11,22 @@ class StoreAreaRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $name = $this->input('name');
+        if (is_string($name) && $name !== '') {
+            $this->merge([
+                'name' => ['en' => $name, 'ar' => $name],
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'array'],
+            'name.en' => ['required', 'string', 'max:255'],
+            'name.ar' => ['required', 'string', 'max:255'],
             'coordinates' => ['nullable', 'string'],
         ];
     }

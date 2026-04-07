@@ -11,7 +11,8 @@ class AreaResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'name' => $this->name,
+            'name' => $this->localized_name,
+            'name_translations' => $this->name,
             'coordinates' => $this->coordinates,
             'created_at' => $this->created_at?->toDateTimeString(),
             'updated_at' => $this->updated_at?->toDateTimeString(),

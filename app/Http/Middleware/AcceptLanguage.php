@@ -10,18 +10,32 @@ class AcceptLanguage
 {
     private const ALLOWED = ['en', 'ar'];
 
-    public function handle(Request $request, Closure $next): Response
+    public static function resolveLocale(Request $request): ?string
     {
-        $locale = $request->header('Accept-Language', config('app.locale'));
+        $header = $request->header('Accept-Language');
+        $raw = is_string($header) && $header !== '' ? $header : (string) config('app.locale', 'en');
 
-        // Accept "en", "ar", "en-US", "ar-EG" etc.; take first part
-        if (str_contains($locale, '-')) {
-            $locale = strtolower(substr($locale, 0, strpos($locale, '-')));
-        } else {
-            $locale = strtolower(substr($locale, 0, 2));
+        // Examples:
+        // - "en"
+        // - "ar-EG"
+        // - "en-US,en;q=0.9,ar;q=0.8"
+        $first = trim(strtok($raw, ',') ?: $raw);
+        $first = trim(strtok($first, ';') ?: $first);
+
+        if ($first === '') {
+            return null;
         }
 
-        if (in_array($locale, self::ALLOWED, true)) {
+        $first = strtolower($first);
+        $base = str_contains($first, '-') ? substr($first, 0, (int) strpos($first, '-')) : substr($first, 0, 2);
+
+        return in_array($base, self::ALLOWED, true) ? $base : null;
+    }
+
+    public function handle(Request $request, Closure $next): Response
+    {
+        $locale = self::resolveLocale($request);
+        if ($locale) {
             app()->setLocale($locale);
         }
 

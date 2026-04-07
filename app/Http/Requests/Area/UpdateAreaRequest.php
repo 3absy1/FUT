@@ -11,10 +11,22 @@ class UpdateAreaRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $name = $this->input('name');
+        if (is_string($name) && $name !== '') {
+            $this->merge([
+                'name' => ['en' => $name, 'ar' => $name],
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         return [
-            'name' => ['sometimes', 'string', 'max:255'],
+            'name' => ['sometimes', 'array'],
+            'name.en' => ['required_with:name', 'string', 'max:255'],
+            'name.ar' => ['required_with:name', 'string', 'max:255'],
             'coordinates' => ['sometimes', 'nullable', 'string'],
         ];
     }

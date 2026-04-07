@@ -5,6 +5,9 @@ return [
     'ok' => 'موافق',
     'error' => 'خطأ',
     'something_went_wrong' => 'حدث خطأ ما',
+    'not_found' => 'العنصر غير موجود',
+    'internal_server_error' => 'خطأ داخلي في الخادم',
+    'too_many_requests' => 'طلبات كثيرة جداً',
     'validation_failed' => 'فشل التحقق',
 
     // Auth
@@ -13,6 +16,7 @@ return [
         'login_success' => 'تم تسجيل الدخول بنجاح.',
         'verify_success' => 'تم التحقق بنجاح.',
         'logout_success' => 'تم تسجيل الخروج.',
+        'profile_updated' => 'تم تحديث الملف الشخصي بنجاح.',
         'requires_otp' => 'يرجى التحقق من رقم الهاتف برمز OTP أولاً.',
         'credentials_incorrect' => 'بيانات الاعتماد غير صحيحة.',
         'user_not_found' => 'المستخدم غير موجود.',
@@ -27,6 +31,7 @@ return [
     'friendship' => [
         'request_sent' => 'تم إرسال طلب الصداقة.',
         'request_accepted' => 'تم قبول طلب الصداقة.',
+        'request_rejected' => 'تم رفض طلب الصداقة.',
         'deleted' => 'تم حذف الصديق.',
         'cannot_friend_self' => 'لا يمكنك إرسال طلب صداقة لنفسك.',
         'request_already_pending' => 'يوجد طلب صداقة معلق بالفعل بينكما.',
@@ -35,6 +40,27 @@ return [
         'not_pending' => 'طلب الصداقة ليس معلقاً.',
         'cannot_accept_own_request' => 'لا يمكنك قبول طلب الصداقة الذي أرسلته أنت.',
         'not_allowed' => 'غير مسموح لك تنفيذ هذا الإجراء.',
+    ],
+
+    // Area
+    'area' => [
+        'created' => 'تم إنشاء المنطقة بنجاح.',
+        'updated' => 'تم تحديث المنطقة بنجاح.',
+        'deleted' => 'تم حذف المنطقة بنجاح.',
+    ],
+
+    // Config
+    'config' => [
+        'created' => 'تم إنشاء الإعدادات بنجاح.',
+        'updated' => 'تم تحديث الإعدادات بنجاح.',
+        'deleted' => 'تم حذف الإعدادات بنجاح.',
+    ],
+
+    // Division
+    'division' => [
+        'created' => 'تم إنشاء القسم بنجاح.',
+        'updated' => 'تم تحديث القسم بنجاح.',
+        'deleted' => 'تم حذف القسم بنجاح.',
     ],
 
     // Club
@@ -50,6 +76,13 @@ return [
         'created' => 'تم إنشاء النادي بنجاح.',
         'updated' => 'تم تحديث النادي بنجاح.',
         'deleted' => 'تم حذف النادي بنجاح.',
+    ],
+
+    // Stadium
+    'stadium' => [
+        'created' => 'تم إنشاء الملعب بنجاح.',
+        'updated' => 'تم تحديث الملعب بنجاح.',
+        'deleted' => 'تم حذف الملعب بنجاح.',
     ],
 
     // Match schedule requests
@@ -80,9 +113,5 @@ return [
         'already_completed' => 'تم تسجيل نتيجة هذه المباراة من قبل.',
         'winner_score_mismatch' => 'الفائز لا يتطابق مع الأهداف المدخلة.',
         'draw_score_mismatch' => 'نتيجة التعادل تتطلب تساوي الأهداف.',
-    ],
-    'auth' => [
-        'profile_updated' => '',
-
     ],
 ];

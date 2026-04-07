@@ -11,7 +11,8 @@ class DivisionResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'name' => $this->name,
+            'name' => $this->localized_name,
+            'name_translations' => $this->name,
             'matches_count' => $this->matches_count,
             'checkpoints' => $this->checkpoints,
             'sort_order' => $this->sort_order,

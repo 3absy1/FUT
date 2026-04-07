@@ -5,6 +5,9 @@ return [
     'ok' => 'OK',
     'error' => 'Error',
     'something_went_wrong' => 'Something went wrong',
+    'not_found' => 'Resource not found',
+    'internal_server_error' => 'Internal server error',
+    'too_many_requests' => 'Too many requests',
     'validation_failed' => 'Validation failed',
 
     // Auth
@@ -13,6 +16,7 @@ return [
         'login_success' => 'Logged in successfully.',
         'verify_success' => 'Verified successfully.',
         'logout_success' => 'Logged out.',
+        'profile_updated' => 'Profile updated successfully.',
         'requires_otp' => 'Please verify your phone with OTP first.',
         'credentials_incorrect' => 'The provided credentials are incorrect.',
         'user_not_found' => 'User not found.',
@@ -28,6 +32,7 @@ return [
     'friendship' => [
         'request_sent' => 'Friend request sent.',
         'request_accepted' => 'Friend request accepted.',
+        'request_rejected' => 'Friend request rejected.',
         'deleted' => 'Friend removed.',
         'cannot_friend_self' => 'You cannot send a friend request to yourself.',
         'request_already_pending' => 'There is already a pending friend request between you two.',
@@ -36,6 +41,27 @@ return [
         'not_pending' => 'This friend request is not pending.',
         'cannot_accept_own_request' => 'You cannot accept your own friend request.',
         'not_allowed' => 'You are not allowed to perform this action.',
+    ],
+
+    // Area
+    'area' => [
+        'created' => 'Area created successfully.',
+        'updated' => 'Area updated successfully.',
+        'deleted' => 'Area deleted successfully.',
+    ],
+
+    // Config
+    'config' => [
+        'created' => 'Config created successfully.',
+        'updated' => 'Config updated successfully.',
+        'deleted' => 'Config deleted successfully.',
+    ],
+
+    // Division
+    'division' => [
+        'created' => 'Division created successfully.',
+        'updated' => 'Division updated successfully.',
+        'deleted' => 'Division deleted successfully.',
     ],
 
     // Club
@@ -51,6 +77,13 @@ return [
         'created' => 'Club created successfully.',
         'updated' => 'Club updated successfully.',
         'deleted' => 'Club deleted successfully.',
+    ],
+
+    // Stadium
+    'stadium' => [
+        'created' => 'Stadium created successfully.',
+        'updated' => 'Stadium updated successfully.',
+        'deleted' => 'Stadium deleted successfully.',
     ],
 
     // Match schedule requests
