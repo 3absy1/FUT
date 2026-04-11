@@ -22,6 +22,8 @@ class StadiumResource extends JsonResource
 
             'area' => new AreaResource($this->whenLoaded('area')),
 
+            'pitches' => PitchResource::collection($this->whenLoaded('pitches')),
+
             'created_at' => $this->created_at?->toDateTimeString(),
         ];
     }

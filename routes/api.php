@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\ConfigController;
 use App\Http\Controllers\Api\DivisionController;
 use App\Http\Controllers\Api\MatchController;
 use App\Http\Controllers\Api\MatchScheduleRequestController;
+use App\Http\Controllers\Api\PitchController;
 use App\Http\Controllers\Api\StadiumAuthController;
 use App\Http\Controllers\Api\StadiumController;
 use App\Http\Controllers\Api\UserController;
@@ -84,7 +85,17 @@ Route::middleware(['api.lang', 'api.key'])->group(function () {
         Route::patch('stadiums/{stadium}', [StadiumController::class, 'update']);
         Route::delete('stadiums/{stadium}', [StadiumController::class, 'destroy']);
 
+        Route::get('stadium/match-schedule-requests', [MatchScheduleRequestController::class, 'stadiumIndex']);
         Route::post('match-schedule-requests/{matchScheduleRequest}/accept-by-stadium', [MatchScheduleRequestController::class, 'acceptByStadium']);
+
+        Route::get('stadium/matches', [MatchController::class, 'stadiumHistory']);
+        Route::post('stadium/matches', [MatchController::class, 'storeManual']);
         Route::post('matches/{match}/record-result', [MatchController::class, 'recordResult']);
+
+        Route::get('stadium/pitches', [PitchController::class, 'index']);
+        Route::post('stadium/pitches', [PitchController::class, 'store']);
+        Route::put('stadium/pitches/{pitch}', [PitchController::class, 'update']);
+        Route::patch('stadium/pitches/{pitch}', [PitchController::class, 'update']);
+        Route::delete('stadium/pitches/{pitch}', [PitchController::class, 'destroy']);
     });
 });

@@ -5,7 +5,9 @@ namespace App\Repositories\Match;
 use App\Models\Club;
 use App\Models\GameMatch;
 use App\Models\MatchPlayer;
+use App\Models\Pitch;
 use App\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -33,8 +35,72 @@ class MatchRepository implements MatchRepositoryInterface
             // Prefer ongoing first, then nearest scheduled one.
             ->orderByRaw("CASE WHEN status = 'ongoing' THEN 0 ELSE 1 END")
             ->orderBy('scheduled_datetime')
-            ->with(['clubA', 'clubB', 'stadium'])
+            ->with(['clubA', 'clubB', 'stadium', 'pitch'])
             ->first();
+    }
+
+    public function historyForStadium(User $owner): LengthAwarePaginator
+    {
+        if (! $owner->is_stadium_owner || ! $owner->stadium_id) {
+            throw ValidationException::withMessages([
+                'user' => [__('api.match_result.not_stadium_owner')],
+            ]);
+        }
+
+        return GameMatch::query()
+            ->where('stadium_id', $owner->stadium_id)
+            ->with(['clubA', 'clubB', 'stadium', 'pitch'])
+            ->orderByDesc('scheduled_datetime')
+            ->paginate(15);
+    }
+
+    public function createManual(User $owner, array $data): GameMatch
+    {
+        if (! $owner->is_stadium_owner || ! $owner->stadium_id) {
+            throw ValidationException::withMessages([
+                'user' => [__('api.match_result.not_stadium_owner')],
+            ]);
+        }
+
+        $pitchOk = Pitch::query()
+            ->whereKey((int) $data['pitch_id'])
+            ->where('stadium_id', $owner->stadium_id)
+            ->exists();
+
+        if (! $pitchOk) {
+            throw ValidationException::withMessages([
+                'pitch_id' => [__('api.pitch.invalid_for_stadium')],
+            ]);
+        }
+
+        if ((int) $data['club_a_id'] === (int) $data['club_b_id']) {
+            throw ValidationException::withMessages([
+                'club_b_id' => [__('api.match_manual.same_clubs')],
+            ]);
+        }
+
+        $status = $data['status'] ?? 'scheduled';
+        if (! in_array($status, ['scheduled', 'pending', 'ongoing'], true)) {
+            throw ValidationException::withMessages([
+                'status' => [__('api.match_manual.invalid_status')],
+            ]);
+        }
+
+        return DB::transaction(function () use ($owner, $data, $status) {
+            $match = GameMatch::create([
+                'club_a_id' => (int) $data['club_a_id'],
+                'club_b_id' => (int) $data['club_b_id'],
+                'stadium_id' => $owner->stadium_id,
+                'pitch_id' => (int) $data['pitch_id'],
+                'scheduled_datetime' => $data['scheduled_datetime'],
+                'status' => $status,
+                'score_club_a' => (int) ($data['score_club_a'] ?? 0),
+                'score_club_b' => (int) ($data['score_club_b'] ?? 0),
+                'tournament_id' => null,
+            ]);
+
+            return $match->fresh(['clubA', 'clubB', 'stadium', 'pitch']);
+        });
     }
 
     public function recordResult(
@@ -105,7 +171,7 @@ class MatchRepository implements MatchRepositoryInterface
                 $this->applyDrawExp($clubAUserIds, $clubBUserIds, $match->club_a_id, $match->club_b_id);
             }
 
-            return $match->fresh(['clubA', 'clubB', 'stadium', 'matchPlayers.user']);
+            return $match->fresh(['clubA', 'clubB', 'stadium', 'pitch', 'matchPlayers.user']);
         });
     }
 

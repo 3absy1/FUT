@@ -95,6 +95,20 @@ return [
         'deleted' => 'Stadium deleted successfully.',
     ],
 
+    'pitch' => [
+        'created' => 'Pitch created successfully.',
+        'updated' => 'Pitch updated successfully.',
+        'deleted' => 'Pitch deleted successfully.',
+        'invalid_for_stadium' => 'Choose a pitch that belongs to your stadium.',
+        'not_yours' => 'This pitch does not belong to your stadium.',
+    ],
+
+    'match_manual' => [
+        'created' => 'Match created successfully.',
+        'same_clubs' => 'The two clubs must be different.',
+        'invalid_status' => 'Invalid match status.',
+    ],
+
     // Match schedule requests
     'match_schedule_request' => [
         'created' => 'Schedule request created. Please complete payment to confirm.',

@@ -1,11 +1,12 @@
 <?php
 
-namespace App\Http\Requests\MatchScheduleRequest;
+namespace App\Http\Requests\Match;
 
 use App\Models\Pitch;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
-class StadiumAcceptMatchRequest extends FormRequest
+class StoreManualMatchRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -15,6 +16,8 @@ class StadiumAcceptMatchRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'club_a_id' => ['required', 'integer', 'exists:clubs,id'],
+            'club_b_id' => ['required', 'integer', 'exists:clubs,id', 'different:club_a_id'],
             'pitch_id' => [
                 'required',
                 'integer',
@@ -34,7 +37,10 @@ class StadiumAcceptMatchRequest extends FormRequest
                     }
                 },
             ],
+            'scheduled_datetime' => ['required', 'date'],
+            'status' => ['sometimes', 'string', Rule::in(['scheduled', 'pending', 'ongoing'])],
+            'score_club_a' => ['sometimes', 'integer', 'min:0'],
+            'score_club_b' => ['sometimes', 'integer', 'min:0'],
         ];
     }
 }
-

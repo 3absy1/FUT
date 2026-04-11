@@ -20,5 +20,6 @@ return [
         'start_datetime' => 'start time',
         'end_datetime' => 'end time',
         'stadium_id' => 'stadium',
+        'pitch_id' => 'pitch',
     ],
 ];

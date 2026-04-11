@@ -39,6 +39,10 @@ class MatchScheduleRequestResource extends JsonResource
             'players' => MatchScheduleRequestPlayerResource::collection($this->whenLoaded('players')),
             'slots' => MatchScheduleRequestSlotResource::collection($this->whenLoaded('slots')),
             'matched_slot' => new MatchScheduleRequestSlotResource($this->whenLoaded('matchedSlot')),
+            'match' => $this->when(
+                $this->relationLoaded('gameMatch') && $this->gameMatch,
+                fn () => new MatchResource($this->gameMatch)
+            ),
         ];
     }
 }

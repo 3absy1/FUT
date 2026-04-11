@@ -26,7 +26,10 @@ interface MatchScheduleRequestRepositoryInterface
 
     public function acceptByStadiumOwner(
         User $owner,
-        MatchScheduleRequest $request
+        MatchScheduleRequest $request,
+        array $data
     ): MatchScheduleRequest;
+
+    public function listForStadiumOwner(User $owner, ?string $status = null): LengthAwarePaginator;
 }
 

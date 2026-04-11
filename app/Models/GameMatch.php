@@ -11,7 +11,7 @@ class GameMatch extends Model
     protected $table = 'matches';
 
     protected $fillable = [
-        'club_a_id', 'club_b_id', 'stadium_id', 'scheduled_datetime',
+        'club_a_id', 'club_b_id', 'stadium_id', 'pitch_id', 'scheduled_datetime',
         'status', 'score_club_a', 'score_club_b', 'tournament_id',
     ];
 
@@ -21,6 +21,7 @@ class GameMatch extends Model
             'scheduled_datetime' => 'datetime',
             'score_club_a' => 'integer',
             'score_club_b' => 'integer',
+            'pitch_id' => 'integer',
         ];
     }
 
@@ -37,6 +38,11 @@ class GameMatch extends Model
     public function stadium(): BelongsTo
     {
         return $this->belongsTo(Stadium::class);
+    }
+
+    public function pitch(): BelongsTo
+    {
+        return $this->belongsTo(Pitch::class);
     }
 
     public function tournament(): BelongsTo

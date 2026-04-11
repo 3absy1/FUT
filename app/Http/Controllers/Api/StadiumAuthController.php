@@ -25,7 +25,7 @@ class StadiumAuthController extends Controller
         $user = $this->authRepository->registerStadiumOwner($request->validated());
 
         return $this->success(
-            ['user' => new UserResource($user->load('stadium.area'))],
+            ['user' => new UserResource($user->load(['stadium.area', 'stadium.pitches']))],
             'auth.stadium_register_success',
             201
         );
@@ -44,7 +44,7 @@ class StadiumAuthController extends Controller
                 403,
                 [
                     'requires_otp' => true,
-                    'user' => new UserResource($result['user']->load('stadium.area')),
+                    'user' => new UserResource($result['user']->load(['stadium.area', 'stadium.pitches'])),
                 ]
             );
         }
@@ -52,7 +52,7 @@ class StadiumAuthController extends Controller
         return $this->success([
             'token' => $result['token'],
             'token_type' => 'Bearer',
-            'user' => new UserResource($result['user']->load('stadium.area')),
+            'user' => new UserResource($result['user']->load(['stadium.area', 'stadium.pitches'])),
         ], 'auth.stadium_login_success');
     }
 
@@ -63,13 +63,13 @@ class StadiumAuthController extends Controller
         return $this->success([
             'token' => $result['token'],
             'token_type' => 'Bearer',
-            'user' => new UserResource($result['user']->load('stadium.area')),
+            'user' => new UserResource($result['user']->load(['stadium.area', 'stadium.pitches'])),
         ], 'auth.stadium_verify_success');
     }
 
     public function profile(Request $request): JsonResponse
     {
-        $user = $request->user()->load(['stadium.area']);
+        $user = $request->user()->load(['stadium.area', 'stadium.pitches']);
 
         return $this->success([
             'user' => new UserResource($user),

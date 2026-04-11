@@ -40,4 +40,9 @@ class Stadium extends Model
     {
         return $this->hasMany(MatchScheduleRequest::class);
     }
+
+    public function pitches(): HasMany
+    {
+        return $this->hasMany(Pitch::class);
+    }
 }

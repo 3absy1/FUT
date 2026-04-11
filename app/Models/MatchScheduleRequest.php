@@ -62,6 +62,11 @@ class MatchScheduleRequest extends Model
         return $this->belongsTo(Stadium::class);
     }
 
+    public function gameMatch(): BelongsTo
+    {
+        return $this->belongsTo(GameMatch::class, 'match_id');
+    }
+
     public function slots(): HasMany
     {
         return $this->hasMany(MatchScheduleRequestSlot::class, 'match_schedule_request_id');

@@ -31,6 +31,24 @@ class MatchScheduleRequestController extends Controller
         ]);
     }
 
+    /**
+     * Match schedule requests for this stadium: hosted by this stadium + pending (no stadium yet) in the same area.
+     */
+    public function stadiumIndex(Request $request): JsonResponse
+    {
+        $status = $request->query('status');
+        $status = is_string($status) && $status !== '' ? $status : null;
+
+        $requests = $this->matchScheduleRequestRepository->listForStadiumOwner(
+            $request->user(),
+            $status
+        );
+
+        return $this->success([
+            'requests' => MatchScheduleRequestResource::collection($requests),
+        ]);
+    }
+
     public function show(Request $request, MatchScheduleRequest $matchScheduleRequest): JsonResponse
     {
         $requestModel = $this->matchScheduleRequestRepository->findForUser(
@@ -139,7 +157,8 @@ class MatchScheduleRequestController extends Controller
     ): JsonResponse {
         $updated = $this->matchScheduleRequestRepository->acceptByStadiumOwner(
             $request->user(),
-            $matchScheduleRequest
+            $matchScheduleRequest,
+            $request->validated()
         );
 
         return $this->success([

@@ -18,6 +18,7 @@ class MatchResource extends JsonResource
             'club_a_id' => $this->club_a_id,
             'club_b_id' => $this->club_b_id,
             'stadium_id' => $this->stadium_id,
+            'pitch_id' => $this->pitch_id,
             'scheduled_datetime' => $this->scheduled_datetime?->toIso8601String(),
             'status' => $this->status,
             'score_club_a' => $this->score_club_a,
@@ -26,6 +27,10 @@ class MatchResource extends JsonResource
             'club_a' => new ClubResource($this->whenLoaded('clubA')),
             'club_b' => new ClubResource($this->whenLoaded('clubB')),
             'stadium' => new StadiumResource($this->whenLoaded('stadium')),
+            'pitch' => $this->when(
+                $this->relationLoaded('pitch') && $this->pitch,
+                fn () => new PitchResource($this->pitch)
+            ),
         ];
     }
 }

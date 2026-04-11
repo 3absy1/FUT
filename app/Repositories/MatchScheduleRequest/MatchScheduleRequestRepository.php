@@ -10,6 +10,8 @@ use App\Models\MatchScheduleRequest;
 use App\Models\MatchScheduleRequestPlayer;
 use App\Models\MatchScheduleRequestSlot;
 use App\Models\MatchPlayer;
+use App\Models\Pitch;
+use App\Models\Stadium;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -332,7 +334,8 @@ class MatchScheduleRequestRepository implements MatchScheduleRequestRepositoryIn
 
     public function acceptByStadiumOwner(
         User $owner,
-        MatchScheduleRequest $request
+        MatchScheduleRequest $request,
+        array $data
     ): MatchScheduleRequest {
         if (! $owner->is_stadium_owner || ! $owner->stadium_id) {
             throw ValidationException::withMessages([
@@ -346,6 +349,17 @@ class MatchScheduleRequestRepository implements MatchScheduleRequestRepositoryIn
             ]);
         }
 
+        $pitchId = (int) ($data['pitch_id'] ?? 0);
+        $pitchOk = Pitch::query()
+            ->whereKey($pitchId)
+            ->where('stadium_id', $owner->stadium_id)
+            ->exists();
+        if (! $pitchOk) {
+            throw ValidationException::withMessages([
+                'pitch_id' => [__('api.pitch.invalid_for_stadium')],
+            ]);
+        }
+
         $slot = $request->matchedSlot ?? $request->slots()->where('id', $request->matched_slot_id)->first();
 
         if (! $slot) {
@@ -354,11 +368,12 @@ class MatchScheduleRequestRepository implements MatchScheduleRequestRepositoryIn
             ]);
         }
 
-        return DB::transaction(function () use ($owner, $request, $slot) {
+        return DB::transaction(function () use ($owner, $request, $slot, $pitchId) {
             $match = GameMatch::create([
                 'club_a_id' => $request->club_id,
                 'club_b_id' => $request->opponent_club_id,
                 'stadium_id' => $owner->stadium_id,
+                'pitch_id' => $pitchId,
                 'scheduled_datetime' => $slot->start_datetime,
                 'status' => 'scheduled',
                 'score_club_a' => 0,
@@ -397,8 +412,47 @@ class MatchScheduleRequestRepository implements MatchScheduleRequestRepositoryIn
                 'players.user',
                 'slots',
                 'matchedSlot',
+                'gameMatch.pitch',
             ]);
         });
+    }
+
+    public function listForStadiumOwner(User $owner, ?string $status = null): LengthAwarePaginator
+    {
+        $stadiumId = (int) $owner->stadium_id;
+        $stadium = Stadium::query()->findOrFail($stadiumId);
+        $areaId = $stadium->area_id;
+
+        $query = MatchScheduleRequest::query()
+            ->where(function ($q) use ($stadiumId, $areaId) {
+                $q->where('stadium_id', $stadiumId);
+                if ($areaId) {
+                    $q->orWhere(function ($q2) use ($areaId) {
+                        $q2->where('area_id', $areaId)
+                            ->whereNull('stadium_id')
+                            ->where('status', 'pending');
+                    });
+                }
+            });
+
+        if ($status !== null && $status !== '') {
+            $query->where('status', $status);
+        }
+
+        return $query
+            ->with([
+                'club',
+                'opponentClub',
+                'area',
+                'stadium',
+                'requestedBy',
+                'players.user',
+                'slots',
+                'matchedSlot',
+                'gameMatch.pitch',
+            ])
+            ->latest()
+            ->paginate(15);
     }
 
     private function acceptedFriendIds(int $userId)
