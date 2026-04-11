@@ -19,7 +19,7 @@ class RegisterRequest extends FormRequest
             'nick_name' => ['required', 'string', 'max:255', 'unique:users,nick_name'],
             'phone' => ['required', 'string', 'max:30', 'unique:users,phone'],
             'email' => ['nullable', 'string', 'email', 'max:255', 'unique:users,email'],
-            'age' => ['required', 'integer', 'min:1', 'max:120'],
+            'birth_date' => ['required', 'date', 'before:today', 'after:1900-01-01'],
             'password' => ['required', 'string', 'confirmed', Password::defaults()],
             'fcm_token' => ['nullable', 'string'],
         ];

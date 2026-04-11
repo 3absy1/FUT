@@ -7,7 +7,7 @@ return [
         'nick_name' => 'nickname',
         'email' => 'email',
         'password' => 'password',
-        'age' => 'age',
+        'birth_date' => 'date of birth',
         'otp' => 'OTP',
         'phone' => 'phone',
         'area_id' => 'area',

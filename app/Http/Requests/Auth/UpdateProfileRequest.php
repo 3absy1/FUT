@@ -17,7 +17,7 @@ class UpdateProfileRequest extends FormRequest
             'name' => 'sometimes|string|max:255',
             'nick_name' => 'sometimes|string|max:255',
             'email' => 'sometimes|nullable|email|unique:users,email,' . auth()->id(),
-            'age' => 'sometimes|integer|min:1',
+            'birth_date' => 'sometimes|date|before:today|after:1900-01-01',
             'fcm_token' => 'sometimes|nullable|string',
             'area_id' => 'sometimes|nullable|exists:areas,id',
         ];

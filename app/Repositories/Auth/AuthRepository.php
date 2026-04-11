@@ -2,6 +2,7 @@
 
 namespace App\Repositories\Auth;
 
+use App\Models\Division;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -12,14 +13,19 @@ class AuthRepository implements AuthRepositoryInterface
 
     public function register(array $data): User
     {
+        $defaultDivisionId = Division::query()
+            ->orderByDesc('sort_order')
+            ->value('id');
+
         return User::create([
             'name' => $data['name'],
             'nick_name' => $data['nick_name'],
             'phone' => $data['phone'],
             'email' => $data['email'] ?? null,
-            'age' => $data['age'],
+            'birth_date' => $data['birth_date'],
             'password' => $data['password'],
             'fcm_token' => $data['fcm_token'] ?? null,
+            'division_id' => $defaultDivisionId,
             'otp' => self::DUMMY_OTP,
             'otp_expires_at' => now()->addMinutes(10),
             'is_verified' => false,
@@ -93,7 +99,7 @@ class AuthRepository implements AuthRepositoryInterface
             'name'       => $data['name'] ?? $user->name,
             'nick_name'  => $data['nick_name'] ?? $user->nick_name,
             'email'      => $data['email'] ?? $user->email,
-            'age'        => $data['age'] ?? $user->age,
+            'birth_date' => $data['birth_date'] ?? $user->birth_date,
             'fcm_token'  => $data['fcm_token'] ?? $user->fcm_token,
             'area_id'    => array_key_exists('area_id', $data) ? $data['area_id'] : $user->area_id,
         ]);
