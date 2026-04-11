@@ -29,10 +29,16 @@ class UserResource extends JsonResource
             'birth_date' => $this->birth_date?->format('Y-m-d'),
             'age' => $this->birth_date?->age,
             'is_verified' => $this->is_verified,
+            'is_stadium_owner' => (bool) $this->is_stadium_owner,
+            'stadium_id' => $this->stadium_id,
             'rating' => $this->rating,
             'wallet_balance' => $this->wallet_balance,
             'exp' => $this->exp,
             'friends_count' => Friend::query()->where('user_id', $this->id)->count(),
+            'stadium' => $this->when(
+                $this->relationLoaded('stadium') && $this->stadium,
+                fn () => new StadiumResource($this->stadium)
+            ),
             'division' => $division ? [
                 'id' => $division->id,
                 'name' => $division->name,

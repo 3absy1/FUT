@@ -181,5 +181,6 @@ return [
         'slot_id' => 'الموعد',
         'start_datetime' => 'وقت البداية',
         'end_datetime' => 'وقت النهاية',
+        'stadium_id' => 'الملعب',
     ],
 ];

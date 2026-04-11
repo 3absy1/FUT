@@ -15,6 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'api.lang' => \App\Http\Middleware\AcceptLanguage::class,
             'api.key' => \App\Http\Middleware\ValidatePrivateKey::class,
+            'player' => \App\Http\Middleware\EnsurePlayer::class,
+            'stadium_owner' => \App\Http\Middleware\EnsureStadiumOwner::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

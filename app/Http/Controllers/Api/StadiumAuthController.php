@@ -1,0 +1,78 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\RegisterStadiumOwnerRequest;
+use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\VerifyOtpRequest;
+use App\Http\Resources\UserResource;
+use App\Http\Traits\ApiResponseTrait;
+use App\Repositories\Auth\AuthRepositoryInterface;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class StadiumAuthController extends Controller
+{
+    use ApiResponseTrait;
+
+    public function __construct(
+        private AuthRepositoryInterface $authRepository
+    ) {}
+
+    public function register(RegisterStadiumOwnerRequest $request): JsonResponse
+    {
+        $user = $this->authRepository->registerStadiumOwner($request->validated());
+
+        return $this->success(
+            ['user' => new UserResource($user->load('stadium.area'))],
+            'auth.stadium_register_success',
+            201
+        );
+    }
+
+    public function login(LoginRequest $request): JsonResponse
+    {
+        $result = $this->authRepository->loginStadiumOwner($request->validated());
+
+        if ($result['requires_otp'] ?? false) {
+            return $this->error(
+                'auth.requires_otp',
+                'error',
+                'REQUIRES_OTP',
+                [__('api.auth.requires_otp')],
+                403,
+                [
+                    'requires_otp' => true,
+                    'user' => new UserResource($result['user']->load('stadium.area')),
+                ]
+            );
+        }
+
+        return $this->success([
+            'token' => $result['token'],
+            'token_type' => 'Bearer',
+            'user' => new UserResource($result['user']->load('stadium.area')),
+        ], 'auth.stadium_login_success');
+    }
+
+    public function verifyOtp(VerifyOtpRequest $request): JsonResponse
+    {
+        $result = $this->authRepository->verifyOtpStadiumOwner($request->validated());
+
+        return $this->success([
+            'token' => $result['token'],
+            'token_type' => 'Bearer',
+            'user' => new UserResource($result['user']->load('stadium.area')),
+        ], 'auth.stadium_verify_success');
+    }
+
+    public function profile(Request $request): JsonResponse
+    {
+        $user = $request->user()->load(['stadium.area']);
+
+        return $this->success([
+            'user' => new UserResource($user),
+        ]);
+    }
+}

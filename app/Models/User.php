@@ -93,6 +93,11 @@ class User extends Authenticatable
         return $this->belongsTo(Division::class, 'division_id');
     }
 
+    public function stadium(): BelongsTo
+    {
+        return $this->belongsTo(Stadium::class, 'stadium_id');
+    }
+
     /**
      * Backward compatibility for older clients/code.
      */

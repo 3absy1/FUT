@@ -19,5 +19,6 @@ return [
         'slot_id' => 'slot',
         'start_datetime' => 'start time',
         'end_datetime' => 'end time',
+        'stadium_id' => 'stadium',
     ],
 ];

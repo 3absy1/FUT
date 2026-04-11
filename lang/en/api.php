@@ -13,14 +13,23 @@ return [
     // Auth
     'auth' => [
         'register_success' => 'Registration successful. Please verify with OTP (use 1111 for now).',
+        'stadium_register_success' => 'Stadium owner registration successful. Please verify with OTP (use 1111 for now).',
         'login_success' => 'Logged in successfully.',
+        'stadium_login_success' => 'Logged in successfully.',
         'verify_success' => 'Verified successfully.',
+        'stadium_verify_success' => 'Verified successfully.',
         'logout_success' => 'Logged out.',
         'profile_updated' => 'Profile updated successfully.',
         'requires_otp' => 'Please verify your phone with OTP first.',
         'credentials_incorrect' => 'The provided credentials are incorrect.',
         'user_not_found' => 'User not found.',
         'invalid_otp' => 'Invalid or expired OTP. Use 1111 for testing.',
+        'use_stadium_login' => 'This account is for a stadium owner. Use the stadium owner login.',
+        'use_stadium_verify' => 'This account is for a stadium owner. Use the stadium owner OTP verification.',
+        'use_player_verify' => 'This is not a stadium owner account. Use the player OTP verification.',
+        'stadium_owner_only' => 'Only stadium owner accounts can sign in here.',
+        'stadium_owner_required' => 'This action is only available to stadium owners.',
+        'player_route_only' => 'This action is not available to stadium owner accounts. Use the stadium owner app.',
     ],
 
     // HTTP status names (optional)
