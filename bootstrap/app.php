@@ -52,16 +52,22 @@ return Application::configure(basePath: dirname(__DIR__))
             ], $extra), $httpStatus);
         };
 
-        $exceptions->render(function (\Illuminate\Validation\ValidationException $e, $request) use ($apiError) {
+        $exceptions->render(function (\Illuminate\Validation\ValidationException $e, $request) use ($setApiLocale) {
+            if (!$request->is('api/*')) {
+                return null;
+            }
+
+            $setApiLocale($request);
+
             $errorsList = collect($e->errors())->flatten()->values()->all();
-            return $apiError(
-                $request,
-                'validation_failed',
-                'error',
-                'VALIDATION',
-                $errorsList,
-                $e->status
-            );
+            $first = $errorsList[0] ?? __('api.validation_failed');
+
+            return response()->json([
+                'message' => $first,
+                'title' => $first,
+                'code' => 422,
+                'errorsList' => $errorsList,
+            ], 422);
         });
 
         $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, $request) use ($apiError) {

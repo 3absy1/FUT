@@ -47,16 +47,16 @@ trait ApiResponseTrait
     /**
      * Build validation error response in app format (errorsList from validator).
      */
-    protected function validationErrorResponse(ValidationException $e, string $code = 'VALIDATION'): JsonResponse
+    protected function validationErrorResponse(ValidationException $e): JsonResponse
     {
         $errorsList = collect($e->errors())->flatten()->values()->all();
+        $first = $errorsList[0] ?? __('api.validation_failed');
 
-        return $this->error(
-            'validation_failed',
-            'error',
-            $code,
-            $errorsList,
-            $e->status
-        );
+        return response()->json([
+            'message' => $first,
+            'title' => $first,
+            'code' => 422,
+            'errorsList' => $errorsList,
+        ], 422);
     }
 }
