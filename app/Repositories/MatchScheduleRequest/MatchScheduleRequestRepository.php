@@ -331,6 +331,8 @@ class MatchScheduleRequestRepository implements MatchScheduleRequestRepositoryIn
                 ]);
             }
 
+            $this->scheduleStadiumOpenNotifications((int) $request->id);
+
             return $request->load([
                 'club',
                 'opponentClub',
@@ -372,18 +374,38 @@ class MatchScheduleRequestRepository implements MatchScheduleRequestRepositoryIn
             ]);
         }
 
-        $slot = $request->matchedSlot ?? $request->slots()->where('id', $request->matched_slot_id)->first();
+        return DB::transaction(function () use ($owner, $request, $pitchId) {
+            $locked = MatchScheduleRequest::query()
+                ->whereKey($request->id)
+                ->lockForUpdate()
+                ->first();
 
-        if (! $slot) {
-            throw ValidationException::withMessages([
-                'match_schedule_request' => [__('api.match_schedule_request.slot_not_found')],
-            ]);
-        }
+            if (! $locked) {
+                throw ValidationException::withMessages([
+                    'match_schedule_request' => [__('api.match_schedule_request.cannot_accept_by_stadium')],
+                ]);
+            }
 
-        return DB::transaction(function () use ($owner, $request, $slot, $pitchId) {
+            if ($locked->status !== 'pending' || $locked->stadium_id !== null || ! $locked->opponent_club_id || ! $locked->matched_slot_id) {
+                throw ValidationException::withMessages([
+                    'match_schedule_request' => [__('api.match_schedule_request.already_assigned_or_unavailable')],
+                ]);
+            }
+
+            $slot = $locked->matchedSlot ?? MatchScheduleRequestSlot::query()
+                ->where('match_schedule_request_id', $locked->id)
+                ->where('id', $locked->matched_slot_id)
+                ->first();
+
+            if (! $slot) {
+                throw ValidationException::withMessages([
+                    'match_schedule_request' => [__('api.match_schedule_request.slot_not_found')],
+                ]);
+            }
+
             $match = GameMatch::create([
-                'club_a_id' => $request->club_id,
-                'club_b_id' => $request->opponent_club_id,
+                'club_a_id' => $locked->club_id,
+                'club_b_id' => $locked->opponent_club_id,
                 'stadium_id' => $owner->stadium_id,
                 'pitch_id' => $pitchId,
                 'scheduled_datetime' => $slot->start_datetime,
@@ -393,13 +415,14 @@ class MatchScheduleRequestRepository implements MatchScheduleRequestRepositoryIn
                 'tournament_id' => null,
             ]);
 
-            // Copy players into match_players
-            $players = $request->players()->get();
+            $players = MatchScheduleRequestPlayer::query()
+                ->where('match_schedule_request_id', $locked->id)
+                ->get();
 
             foreach ($players as $player) {
                 $clubId = $player->team === 'B'
-                    ? $request->opponent_club_id
-                    : $request->club_id;
+                    ? $locked->opponent_club_id
+                    : $locked->club_id;
 
                 MatchPlayer::create([
                     'match_id' => $match->id,
@@ -409,13 +432,13 @@ class MatchScheduleRequestRepository implements MatchScheduleRequestRepositoryIn
                 ]);
             }
 
-            $request->update([
+            $locked->update([
                 'stadium_id' => $owner->stadium_id,
                 'match_id' => $match->id,
                 'status' => 'scheduled',
             ]);
 
-            return $request->load([
+            return $locked->load([
                 'club',
                 'opponentClub',
                 'area',
@@ -444,7 +467,6 @@ class MatchScheduleRequestRepository implements MatchScheduleRequestRepositoryIn
                     ->orderBy('id')
                     ->lockForUpdate()
                     ->first();
-
 
                 if (! $host) {
                     return 0;
@@ -513,7 +535,9 @@ class MatchScheduleRequestRepository implements MatchScheduleRequestRepositoryIn
                     $q->orWhere(function ($q2) use ($areaId) {
                         $q2->where('area_id', $areaId)
                             ->whereNull('stadium_id')
-                            ->where('status', 'pending');
+                            ->where('status', 'pending')
+                            ->whereNotNull('opponent_club_id')
+                            ->whereNotNull('matched_slot_id');
                     });
                 }
             });
@@ -662,6 +686,62 @@ class MatchScheduleRequestRepository implements MatchScheduleRequestRepositoryIn
 
         $guest->delete();
 
+        $this->scheduleStadiumOpenNotifications((int) $host->id);
+
         return $host->fresh() ?? $host;
+    }
+
+    private function scheduleStadiumOpenNotifications(int $matchScheduleRequestId): void
+    {
+        DB::afterCommit(function () use ($matchScheduleRequestId) {
+            $request = MatchScheduleRequest::query()->find($matchScheduleRequestId);
+            if (! $request) {
+                return;
+            }
+            $this->notifyStadiumOwnersInAreaForRequest($request);
+        });
+    }
+
+    private function notifyStadiumOwnersInAreaForRequest(MatchScheduleRequest $request): void
+    {
+        $request->refresh();
+
+        if (
+            $request->status !== 'pending'
+            || $request->stadium_id !== null
+            || ! $request->opponent_club_id
+            || ! $request->matched_slot_id
+            || ! $request->area_id
+        ) {
+            return;
+        }
+
+        $ownerIds = User::query()
+            ->where('is_stadium_owner', true)
+            ->whereNotNull('stadium_id')
+            ->whereHas('stadium', function ($q) use ($request) {
+                $q->where('area_id', $request->area_id);
+            })
+            ->pluck('id');
+
+        if ($ownerIds->isEmpty()) {
+            return;
+        }
+
+        $now = now();
+        $title = __('api.match_schedule_request.stadium_open_title');
+        $body = __('api.match_schedule_request.stadium_open_body', ['id' => $request->id]);
+
+        $rows = $ownerIds->map(fn (int $userId) => [
+            'user_id' => $userId,
+            'type' => 'match_schedule_open',
+            'title' => $title,
+            'body' => $body,
+            'read_at' => null,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ])->all();
+
+        DB::table('notifications')->insert($rows);
     }
 }
