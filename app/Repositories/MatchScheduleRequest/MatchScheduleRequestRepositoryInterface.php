@@ -31,5 +31,10 @@ interface MatchScheduleRequestRepositoryInterface
     ): MatchScheduleRequest;
 
     public function listForStadiumOwner(User $owner, ?string $status = null): LengthAwarePaginator;
-}
 
+    /**
+     * Pair pending unpaired requests that share the same area and an identical slot start time.
+     * Returns how many merges were performed.
+     */
+    public function autoPairAllPendingMatchScheduleRequests(): int;
+}

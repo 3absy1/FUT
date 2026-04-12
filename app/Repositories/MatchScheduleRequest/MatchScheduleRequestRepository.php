@@ -6,16 +6,17 @@ use App\Models\Club;
 use App\Models\ClubMember;
 use App\Models\Friend;
 use App\Models\GameMatch;
+use App\Models\MatchPlayer;
 use App\Models\MatchScheduleRequest;
 use App\Models\MatchScheduleRequestPlayer;
 use App\Models\MatchScheduleRequestSlot;
-use App\Models\MatchPlayer;
 use App\Models\Pitch;
 use App\Models\Stadium;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class MatchScheduleRequestRepository implements MatchScheduleRequestRepositoryInterface
 {
@@ -147,6 +148,10 @@ class MatchScheduleRequestRepository implements MatchScheduleRequestRepositoryIn
                 ]);
             }
 
+            $request->load(['slots', 'players']);
+
+            $request = $this->attemptAutoPairNewRequest($request);
+
             return $request->load([
                 'club',
                 'opponentClub',
@@ -163,7 +168,10 @@ class MatchScheduleRequestRepository implements MatchScheduleRequestRepositoryIn
     public function listForUser(User $actor): LengthAwarePaginator
     {
         return MatchScheduleRequest::query()
-            ->where('requested_by_user_id', $actor->id)
+            ->where(function ($q) use ($actor) {
+                $q->where('requested_by_user_id', $actor->id)
+                    ->orWhere('opponent_joined_by_user_id', $actor->id);
+            })
             ->with(['club', 'opponentClub', 'area', 'stadium', 'players.user', 'slots', 'matchedSlot'])
             ->latest()
             ->paginate(10);
@@ -171,7 +179,11 @@ class MatchScheduleRequestRepository implements MatchScheduleRequestRepositoryIn
 
     public function findForUser(User $actor, MatchScheduleRequest $request): MatchScheduleRequest
     {
-        if ((int) $request->requested_by_user_id !== (int) $actor->id) {
+        $allowed =
+            (int) $request->requested_by_user_id === (int) $actor->id
+            || (int) ($request->opponent_joined_by_user_id ?? 0) === (int) $actor->id;
+
+        if (! $allowed) {
             throw ValidationException::withMessages([
                 'match_schedule_request' => [__('api.match_schedule_request.not_allowed')],
             ]);
@@ -417,6 +429,77 @@ class MatchScheduleRequestRepository implements MatchScheduleRequestRepositoryIn
         });
     }
 
+    public function autoPairAllPendingMatchScheduleRequests(): int
+    {
+        $paired = 0;
+
+        for ($i = 0; $i < 500; $i++) {
+            $step = DB::transaction(function () {
+                $host = MatchScheduleRequest::query()
+                    ->where('status', 'pending')
+                    ->whereNull('opponent_club_id')
+                    ->whereNull('matched_slot_id')
+                    ->whereNull('stadium_id')
+                    ->whereNull('match_id')
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->first();
+
+
+                if (! $host) {
+                    return 0;
+                }
+
+                $host->load('slots');
+
+                $guestIds = MatchScheduleRequest::query()
+                    ->where('status', 'pending')
+                    ->whereNull('opponent_club_id')
+                    ->whereNull('matched_slot_id')
+                    ->whereNull('stadium_id')
+                    ->whereNull('match_id')
+                    ->where('area_id', $host->area_id)
+                    ->where('club_id', '!=', $host->club_id)
+                    ->where('id', '!=', $host->id)
+                    ->orderBy('id')
+                    ->pluck('id');
+
+                foreach ($guestIds as $guestId) {
+                    $guest = MatchScheduleRequest::query()->whereKey($guestId)->lockForUpdate()->first();
+                    if (! $this->isEligibleForAutoPair($guest)) {
+                        continue;
+                    }
+
+                    $guest->load(['slots', 'players']);
+
+                    $hostSlot = $this->findFirstMatchingHostSlot($host, $guest);
+                    if (! $hostSlot) {
+                        continue;
+                    }
+
+                    $host = MatchScheduleRequest::query()->whereKey($host->id)->lockForUpdate()->first();
+                    if (! $this->isEligibleForAutoPair($host)) {
+                        return 0;
+                    }
+
+                    $this->mergeGuestIntoHost($host, $guest, $hostSlot);
+
+                    return 1;
+                }
+
+                return 0;
+            });
+
+            if ($step === 0) {
+                break;
+            }
+
+            $paired += $step;
+        }
+
+        return $paired;
+    }
+
     public function listForStadiumOwner(User $owner, ?string $status = null): LengthAwarePaginator
     {
         $stadiumId = (int) $owner->stadium_id;
@@ -461,5 +544,124 @@ class MatchScheduleRequestRepository implements MatchScheduleRequestRepositoryIn
             ->where('user_id', $userId)
             ->pluck('friend_id');
     }
-}
 
+    private function attemptAutoPairNewRequest(MatchScheduleRequest $guest): MatchScheduleRequest
+    {
+        $hostIds = MatchScheduleRequest::query()
+            ->where('status', 'pending')
+            ->whereNull('opponent_club_id')
+            ->whereNull('matched_slot_id')
+            ->whereNull('stadium_id')
+            ->whereNull('match_id')
+            ->where('area_id', $guest->area_id)
+            ->where('club_id', '!=', $guest->club_id)
+            ->where('id', '!=', $guest->id)
+            ->orderBy('id')
+            ->pluck('id');
+
+        foreach ($hostIds as $hostId) {
+            $host = MatchScheduleRequest::query()->whereKey($hostId)->lockForUpdate()->first();
+            if (! $this->isEligibleForAutoPair($host)) {
+                continue;
+            }
+
+            $guestLocked = MatchScheduleRequest::query()->whereKey($guest->id)->lockForUpdate()->first();
+            if (! $this->isEligibleForAutoPair($guestLocked)) {
+                return $guestLocked;
+            }
+
+            $host->load('slots');
+            $guestLocked->load(['slots', 'players']);
+
+            $hostSlot = $this->findFirstMatchingHostSlot($host, $guestLocked);
+            if (! $hostSlot) {
+                continue;
+            }
+
+            return $this->mergeGuestIntoHost($host, $guestLocked, $hostSlot);
+        }
+
+        return $guest;
+    }
+
+    private function isEligibleForAutoPair(?MatchScheduleRequest $request): bool
+    {
+        if (! $request) {
+            return false;
+        }
+
+        return $request->status === 'pending'
+            && $request->opponent_club_id === null
+            && $request->matched_slot_id === null
+            && $request->stadium_id === null
+            && $request->match_id === null;
+    }
+
+    private function slotStartKey(mixed $start): string
+    {
+        try {
+            return \Illuminate\Support\Carbon::parse($start)->utc()->format('Y-m-d H:i:s');
+        } catch (Throwable) {
+            return '';
+        }
+    }
+
+    private function findFirstMatchingHostSlot(MatchScheduleRequest $host, MatchScheduleRequest $guest): ?MatchScheduleRequestSlot
+    {
+        $guestKeys = $guest->slots
+            ->map(fn (MatchScheduleRequestSlot $s) => $this->slotStartKey($s->start_datetime))
+            ->filter()
+            ->flip();
+
+        foreach ($host->slots as $hostSlot) {
+            $key = $this->slotStartKey($hostSlot->start_datetime);
+            if ($key !== '' && $guestKeys->has($key)) {
+                return $hostSlot;
+            }
+        }
+
+        return null;
+    }
+
+    private function mergeGuestIntoHost(
+        MatchScheduleRequest $host,
+        MatchScheduleRequest $guest,
+        MatchScheduleRequestSlot $hostSlot
+    ): MatchScheduleRequest {
+        $existingUserIds = MatchScheduleRequestPlayer::query()
+            ->where('match_schedule_request_id', $host->id)
+            ->pluck('user_id');
+
+        $host->update([
+            'opponent_club_id' => $guest->club_id,
+            'opponent_joined_by_user_id' => $guest->requested_by_user_id,
+            'matched_slot_id' => $hostSlot->id,
+        ]);
+
+        foreach ($guest->players as $player) {
+            if ($existingUserIds->contains($player->user_id)) {
+                continue;
+            }
+
+            MatchScheduleRequestPlayer::create([
+                'match_schedule_request_id' => $host->id,
+                'user_id' => $player->user_id,
+                'team' => 'B',
+                'role' => $player->role,
+                'source' => $player->source,
+            ]);
+        }
+
+        MatchScheduleRequestPlayer::query()
+            ->where('match_schedule_request_id', $guest->id)
+            ->delete();
+
+        MatchScheduleRequestSlot::query()
+            ->where('match_schedule_request_id', $guest->id)
+            ->delete();
+
+        $guest->delete();
+
+        return $host->fresh() ?? $host;
+    }
+}
