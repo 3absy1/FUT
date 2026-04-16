@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterStadiumOwnerRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\VerifyOtpRequest;
-use App\Http\Resources\UserResource;
+use App\Http\Resources\StadiumOwnerResource;
 use App\Http\Traits\ApiResponseTrait;
 use App\Repositories\Auth\AuthRepositoryInterface;
 use Illuminate\Http\JsonResponse;
@@ -25,7 +25,7 @@ class StadiumAuthController extends Controller
         $user = $this->authRepository->registerStadiumOwner($request->validated());
 
         return $this->success(
-            ['user' => new UserResource($user->load(['stadium.area', 'stadium.pitches']))],
+            ['user' => new StadiumOwnerResource($user->load(['stadium.area', 'stadium.pitches']))],
             'auth.stadium_register_success',
             201
         );
@@ -44,7 +44,7 @@ class StadiumAuthController extends Controller
                 403,
                 [
                     'requires_otp' => true,
-                    'user' => new UserResource($result['user']->load(['stadium.area', 'stadium.pitches'])),
+                    'user' => new StadiumOwnerResource($result['user']->load(['stadium.area', 'stadium.pitches'])),
                 ]
             );
         }
@@ -52,7 +52,7 @@ class StadiumAuthController extends Controller
         return $this->success([
             'token' => $result['token'],
             'token_type' => 'Bearer',
-            'user' => new UserResource($result['user']->load(['stadium.area', 'stadium.pitches'])),
+            'user' => new StadiumOwnerResource($result['user']->load(['stadium.area', 'stadium.pitches'])),
         ], 'auth.stadium_login_success');
     }
 
@@ -63,7 +63,7 @@ class StadiumAuthController extends Controller
         return $this->success([
             'token' => $result['token'],
             'token_type' => 'Bearer',
-            'user' => new UserResource($result['user']->load(['stadium.area', 'stadium.pitches'])),
+            'user' => new StadiumOwnerResource($result['user']->load(['stadium.area', 'stadium.pitches'])),
         ], 'auth.stadium_verify_success');
     }
 
@@ -72,7 +72,7 @@ class StadiumAuthController extends Controller
         $user = $request->user()->load(['stadium.area', 'stadium.pitches']);
 
         return $this->success([
-            'user' => new UserResource($user),
+            'user' => new StadiumOwnerResource($user),
         ]);
     }
 }

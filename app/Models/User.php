@@ -42,6 +42,11 @@ class User extends Authenticatable
         'otp',
     ];
 
+    protected $casts = [
+        'name' => 'array',
+        'checkpoints' => 'array',
+    ];
+
     protected function casts(): array
     {
         return [
