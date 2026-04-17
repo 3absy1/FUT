@@ -39,6 +39,8 @@ class UserResource extends JsonResource
                 'matches_count' => $division->matches_count,
                 'checkpoints' => $division->checkpoints,
                 'sort_order' => $division->sort_order,
+                'current_match' => (int) ($this->division_current_match ?? 0),
+                'last_checkpoint_match' => (int) ($this->division_last_checkpoint_match ?? 0),
             ] : null,
             // 'level' => $level ? [
             //     'id' => $level->id,
