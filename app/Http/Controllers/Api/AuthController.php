@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\RegisterRequest;
+use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Requests\Auth\UpdateProfileRequest;
 use App\Http\Requests\Auth\VerifyOtpRequest;
 use App\Http\Resources\UserResource;
@@ -39,14 +41,14 @@ class AuthController extends Controller
         if ($result['requires_otp'] ?? false) {
             return $this->error(
                 'auth.requires_otp',
-                'error',
-                'REQUIRES_OTP',
+                'auth.requires_otp',
+                '403',
                 [__('api.auth.requires_otp')],
                 403,
-                [
-                    'requires_otp' => true,
-                    'user' => new UserResource($result['user']),
-                ]
+                // [
+                //     'requires_otp' => true,
+                //     'user' => new UserResource($result['user']),
+                // ]
             );
         }
 
@@ -66,6 +68,20 @@ class AuthController extends Controller
             'token_type' => 'Bearer',
             'user' => new UserResource($result['user']),
         ], 'auth.verify_success');
+    }
+
+    public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
+    {
+        $this->authRepository->forgotPassword($request->validated());
+
+        return $this->success([], 'auth.password_reset_otp_sent');
+    }
+
+    public function resetPassword(ResetPasswordRequest $request): JsonResponse
+    {
+        $this->authRepository->resetPassword($request->validated());
+
+        return $this->success([], 'auth.password_reset_success');
     }
 
     public function logout(Request $request): JsonResponse

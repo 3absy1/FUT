@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\RegisterStadiumOwnerRequest;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Requests\Auth\VerifyOtpRequest;
 use App\Http\Resources\StadiumOwnerResource;
 use App\Http\Traits\ApiResponseTrait;
@@ -65,6 +67,20 @@ class StadiumAuthController extends Controller
             'token_type' => 'Bearer',
             'user' => new StadiumOwnerResource($result['user']->load(['stadium.area', 'stadium.pitches'])),
         ], 'auth.stadium_verify_success');
+    }
+
+    public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
+    {
+        $this->authRepository->forgotPasswordStadiumOwner($request->validated());
+
+        return $this->success([], 'auth.password_reset_otp_sent');
+    }
+
+    public function resetPassword(ResetPasswordRequest $request): JsonResponse
+    {
+        $this->authRepository->resetPasswordStadiumOwner($request->validated());
+
+        return $this->success([], 'auth.password_reset_success');
     }
 
     public function profile(Request $request): JsonResponse

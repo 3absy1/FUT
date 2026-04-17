@@ -580,6 +580,96 @@
               ]
             },
             {
+              "name": "forgot-password",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept-Language",
+                    "value": "en",
+                    "type": "text"
+                  },
+                  {
+                    "key": "X-Api-Key",
+                    "value": "123456",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"phone\": \"01012345678\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{Fut_live}}auth/forgot-password",
+                  "host": [
+                    "{{Fut_live}}auth"
+                  ],
+                  "path": [
+                    "forgot-password"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "reset-password",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept-Language",
+                    "value": "en",
+                    "type": "text"
+                  },
+                  {
+                    "key": "X-Api-Key",
+                    "value": "123456",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"phone\": \"01012345678\",\r\n  \"otp\": \"1111\",\r\n  \"password\": \"Password@123\",\r\n  \"password_confirmation\": \"Password@123\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{Fut_live}}auth/reset-password",
+                  "host": [
+                    "{{Fut_live}}auth"
+                  ],
+                  "path": [
+                    "reset-password"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
               "name": "logout",
               "event": [
                 {
@@ -2422,6 +2512,50 @@
                   ],
                   "path": [
                     "current"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "leaderboard players (top3 + me + paginated)",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{userAuthToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept-Language",
+                    "value": "en",
+                    "type": "text"
+                  },
+                  {
+                    "key": "X-Api-Key",
+                    "value": "123456",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{Fut_local}}leaderboard/players?per_page=20",
+                  "host": [
+                    "{{Fut_local}}leaderboard"
+                  ],
+                  "path": [
+                    "players"
+                  ],
+                  "query": [
+                    {
+                      "key": "per_page",
+                      "value": "20"
+                    }
                   ]
                 }
               },
@@ -8373,6 +8507,98 @@
               ]
             },
             {
+              "name": "forgot-password",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept-Language",
+                    "value": "en",
+                    "type": "text"
+                  },
+                  {
+                    "key": "X-Api-Key",
+                    "value": "123456",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"phone\": \"01098765432\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{Fut_live}}auth/stadium/forgot-password",
+                  "host": [
+                    "{{Fut_live}}auth"
+                  ],
+                  "path": [
+                    "stadium",
+                    "forgot-password"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "reset-password",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept-Language",
+                    "value": "en",
+                    "type": "text"
+                  },
+                  {
+                    "key": "X-Api-Key",
+                    "value": "123456",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"phone\": \"01098765432\",\r\n  \"otp\": \"1111\",\r\n  \"password\": \"Password@123\",\r\n  \"password_confirmation\": \"Password@123\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{Fut_live}}auth/stadium/reset-password",
+                  "host": [
+                    "{{Fut_live}}auth"
+                  ],
+                  "path": [
+                    "stadium",
+                    "reset-password"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
               "name": "logout",
               "event": [
                 {
@@ -9119,7 +9345,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"winner\": \"club_a\",\n  \"score_club_a\": 3,\n  \"score_club_b\": 1\n}",
+              "raw": "{\n  \"winner\": \"club_a\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -9148,7 +9374,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"result\": {\n    \"match\": {\n      \"id\": 10,\n      \"status\": \"completed\",\n      \"score_club_a\": 3,\n      \"score_club_b\": 1,\n      \"pitch_id\": 1\n    }\n  },\n  \"message\": \"Match result recorded and EXP updated.\",\n  \"statusCode\": 200,\n  \"statusName\": \"OK\"\n}"
+              "body": "{\n  \"result\": {\n    \"match\": {\n      \"id\": 10,\n      \"status\": \"completed\",\n      \"result\": \"club_a\",\n      \"score_club_a\": null,\n      \"score_club_b\": null,\n      \"pitch_id\": 1\n    }\n  },\n  \"message\": \"Match result recorded and EXP updated.\",\n  \"statusCode\": 200,\n  \"statusName\": \"OK\"\n}"
             }
           ]
         }

@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\ClubMemberController;
 use App\Http\Controllers\Api\ClubRosterController;
 use App\Http\Controllers\Api\ConfigController;
 use App\Http\Controllers\Api\DivisionController;
+use App\Http\Controllers\Api\LeaderboardController;
 use App\Http\Controllers\Api\MatchController;
 use App\Http\Controllers\Api\MatchScheduleRequestController;
 use App\Http\Controllers\Api\PitchController;
@@ -21,11 +22,15 @@ Route::middleware(['api.lang', 'api.key'])->group(function () {
         Route::post('register', [AuthController::class, 'register']);
         Route::post('login', [AuthController::class, 'login']);
         Route::post('verify-otp', [AuthController::class, 'verifyOtp']);
+        Route::post('forgot-password', [AuthController::class, 'forgotPassword']);
+        Route::post('reset-password', [AuthController::class, 'resetPassword']);
 
         Route::prefix('stadium')->group(function () {
             Route::post('register', [StadiumAuthController::class, 'register']);
             Route::post('login', [StadiumAuthController::class, 'login']);
             Route::post('verify-otp', [StadiumAuthController::class, 'verifyOtp']);
+            Route::post('forgot-password', [StadiumAuthController::class, 'forgotPassword']);
+            Route::post('reset-password', [StadiumAuthController::class, 'resetPassword']);
         });
     });
 
@@ -45,6 +50,8 @@ Route::middleware(['api.lang', 'api.key'])->group(function () {
 
         Route::apiResource('divisions', DivisionController::class);
         Route::apiResource('clubs', ClubController::class);
+
+        Route::get('leaderboard/players', [LeaderboardController::class, 'players']);
 
         Route::get('users/search', [FriendshipController::class, 'searchUsers']);
         Route::prefix('friends')->group(function () {

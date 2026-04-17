@@ -18,6 +18,14 @@ interface AuthRepositoryInterface
 
     public function verifyOtpStadiumOwner(array $data): array;
 
+    public function forgotPassword(array $data): void;
+
+    public function forgotPasswordStadiumOwner(array $data): void;
+
+    public function resetPassword(array $data): void;
+
+    public function resetPasswordStadiumOwner(array $data): void;
+
     public function logout(User $user): void;
 
     public function updateProfile(User $user, array $data): User;

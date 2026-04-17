@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Requests\Match;
+namespace App\Http\Requests\Auth;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class RecordMatchResultRequest extends FormRequest
+class ForgotPasswordRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -14,7 +14,7 @@ class RecordMatchResultRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'winner' => ['required', 'in:club_a,club_b,draw'],
+            'phone' => ['required', 'string', 'max:30'],
         ];
     }
 }

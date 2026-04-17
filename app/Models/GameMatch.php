@@ -12,7 +12,7 @@ class GameMatch extends Model
 
     protected $fillable = [
         'club_a_id', 'club_b_id', 'stadium_id', 'pitch_id', 'scheduled_datetime',
-        'status', 'score_club_a', 'score_club_b', 'tournament_id',
+        'status', 'score_club_a', 'score_club_b', 'result', 'tournament_id',
     ];
 
     protected function casts(): array

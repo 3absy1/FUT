@@ -21,6 +21,8 @@ return [
         'logout_success' => 'Logged out.',
         'profile_updated' => 'Profile updated successfully.',
         'requires_otp' => 'Please verify your phone with OTP first.',
+        'password_reset_otp_sent' => 'OTP sent. Please verify to reset your password (use 1111 for now).',
+        'password_reset_success' => 'Password reset successfully.',
         'credentials_incorrect' => 'The provided credentials are incorrect.',
         'user_not_found' => 'User not found.',
         'invalid_otp' => 'Invalid or expired OTP. Use 1111 for testing.',
@@ -138,7 +140,7 @@ return [
         'not_stadium_owner' => 'Only the stadium owner can record this match result.',
         'not_for_this_stadium' => 'This match does not belong to your stadium.',
         'already_completed' => 'Match result has already been recorded.',
-        'winner_score_mismatch' => 'Winner does not match the provided scores.',
-        'draw_score_mismatch' => 'Draw result requires equal scores.',
+        'clubs_must_be_same_area' => 'Both clubs must be in the same area to play this match.',
+        'stadium_area_mismatch' => 'Stadium area must match the clubs area.',
     ],
 ];

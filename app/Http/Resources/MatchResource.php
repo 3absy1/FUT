@@ -21,6 +21,7 @@ class MatchResource extends JsonResource
             'pitch_id' => $this->pitch_id,
             'scheduled_datetime' => $this->scheduled_datetime?->toIso8601String(),
             'status' => $this->status,
+            'result' => $this->result, // club_a, club_b, draw
             'score_club_a' => $this->score_club_a,
             'score_club_b' => $this->score_club_b,
 

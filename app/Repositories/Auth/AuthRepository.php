@@ -10,6 +10,7 @@ use Illuminate\Validation\ValidationException;
 class AuthRepository implements AuthRepositoryInterface
 {
     private const DUMMY_OTP = '1111';
+    private const OTP_EXPIRES_MINUTES = 10;
 
     public function register(array $data): User
     {
@@ -28,7 +29,7 @@ class AuthRepository implements AuthRepositoryInterface
             'division_id' => $defaultDivisionId,
             'is_stadium_owner' => false,
             'otp' => self::DUMMY_OTP,
-            'otp_expires_at' => now()->addMinutes(10),
+            'otp_expires_at' => now()->addMinutes(self::OTP_EXPIRES_MINUTES),
             'is_verified' => false,
         ]);
     }
@@ -47,7 +48,7 @@ class AuthRepository implements AuthRepositoryInterface
             'is_stadium_owner' => true,
             'division_id' => null,
             'otp' => self::DUMMY_OTP,
-            'otp_expires_at' => now()->addMinutes(10),
+            'otp_expires_at' => now()->addMinutes(self::OTP_EXPIRES_MINUTES),
             'is_verified' => false,
         ]);
     }
@@ -188,9 +189,115 @@ class AuthRepository implements AuthRepositoryInterface
         ];
     }
 
+    public function forgotPassword(array $data): void
+    {
+        $user = User::where('phone', $data['phone'])->first();
+
+        if (! $user) {
+            throw ValidationException::withMessages([
+                'phone' => [__('api.auth.user_not_found')],
+            ]);
+        }
+
+        if ($user->is_stadium_owner) {
+            throw ValidationException::withMessages([
+                'phone' => [__('api.auth.use_stadium_login')],
+            ]);
+        }
+
+        $user->update([
+            'otp' => self::DUMMY_OTP,
+            'otp_expires_at' => now()->addMinutes(self::OTP_EXPIRES_MINUTES),
+        ]);
+    }
+
+    public function forgotPasswordStadiumOwner(array $data): void
+    {
+        $user = User::where('phone', $data['phone'])->first();
+
+        if (! $user) {
+            throw ValidationException::withMessages([
+                'phone' => [__('api.auth.user_not_found')],
+            ]);
+        }
+
+        if (! $user->is_stadium_owner || ! $user->stadium_id) {
+            throw ValidationException::withMessages([
+                'phone' => [__('api.auth.stadium_owner_only')],
+            ]);
+        }
+
+        $user->update([
+            'otp' => self::DUMMY_OTP,
+            'otp_expires_at' => now()->addMinutes(self::OTP_EXPIRES_MINUTES),
+        ]);
+    }
+
+    public function resetPassword(array $data): void
+    {
+        $user = User::where('phone', $data['phone'])->first();
+
+        if (! $user) {
+            throw ValidationException::withMessages([
+                'phone' => [__('api.auth.user_not_found')],
+            ]);
+        }
+
+        if ($user->is_stadium_owner) {
+            throw ValidationException::withMessages([
+                'phone' => [__('api.auth.use_stadium_login')],
+            ]);
+        }
+
+        if (! $user->acceptsDummyOtp($data['otp'])) {
+            throw ValidationException::withMessages([
+                'otp' => [__('api.auth.invalid_otp')],
+            ]);
+        }
+
+        $user->update([
+            'password' => $data['password'],
+            'otp' => null,
+            'otp_expires_at' => null,
+        ]);
+    }
+
+    public function resetPasswordStadiumOwner(array $data): void
+    {
+        $user = User::where('phone', $data['phone'])->first();
+
+        if (! $user) {
+            throw ValidationException::withMessages([
+                'phone' => [__('api.auth.user_not_found')],
+            ]);
+        }
+
+        if (! $user->is_stadium_owner || ! $user->stadium_id) {
+            throw ValidationException::withMessages([
+                'phone' => [__('api.auth.stadium_owner_only')],
+            ]);
+        }
+
+        if (! $user->acceptsDummyOtp($data['otp'])) {
+            throw ValidationException::withMessages([
+                'otp' => [__('api.auth.invalid_otp')],
+            ]);
+        }
+
+        $user->update([
+            'password' => $data['password'],
+            'otp' => null,
+            'otp_expires_at' => null,
+        ]);
+    }
+
     public function logout(User $user): void
     {
-        $user->currentAccessToken()->delete();
+        /** @var \Laravel\Sanctum\PersonalAccessToken|null $token */
+        $token = $user->currentAccessToken();
+        if ($token) {
+            $token->delete();
+        }
     }
 
     public function updateProfile(User $user, array $data): User

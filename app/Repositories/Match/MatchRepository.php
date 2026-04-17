@@ -6,6 +6,7 @@ use App\Models\Club;
 use App\Models\GameMatch;
 use App\Models\MatchPlayer;
 use App\Models\Pitch;
+use App\Models\Division;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -13,10 +14,6 @@ use Illuminate\Validation\ValidationException;
 
 class MatchRepository implements MatchRepositoryInterface
 {
-    private const USER_WIN_EXP = 20;
-    private const USER_LOSE_EXP = 5;
-    private const USER_DRAW_EXP = 10;
-
     private const CLUB_WIN_EXP = 50;
     private const CLUB_LOSE_EXP = 10;
     private const CLUB_DRAW_EXP = 20;
@@ -127,31 +124,30 @@ class MatchRepository implements MatchRepositoryInterface
         }
 
         $winner = $data['winner']; // club_a, club_b, draw
-        $scoreA = (int) $data['score_club_a'];
-        $scoreB = (int) $data['score_club_b'];
 
-        if ($winner === 'club_a' && $scoreA <= $scoreB) {
-            throw ValidationException::withMessages([
-                'winner' => [__('api.match_result.winner_score_mismatch')],
-            ]);
-        }
+        return DB::transaction(function () use ($match, $winner) {
+            $match->loadMissing(['clubA.area', 'clubB.area', 'stadium.area']);
 
-        if ($winner === 'club_b' && $scoreB <= $scoreA) {
-            throw ValidationException::withMessages([
-                'winner' => [__('api.match_result.winner_score_mismatch')],
-            ]);
-        }
+            $clubAAreaId = $match->clubA?->area_id;
+            $clubBAreaId = $match->clubB?->area_id;
+            $stadiumAreaId = $match->stadium?->area_id;
 
-        if ($winner === 'draw' && $scoreA !== $scoreB) {
-            throw ValidationException::withMessages([
-                'winner' => [__('api.match_result.draw_score_mismatch')],
-            ]);
-        }
+            if (! $clubAAreaId || ! $clubBAreaId || $clubAAreaId !== $clubBAreaId) {
+                throw ValidationException::withMessages([
+                    'match' => [__('api.match_result.clubs_must_be_same_area')],
+                ]);
+            }
 
-        return DB::transaction(function () use ($match, $winner, $scoreA, $scoreB) {
+            if ($stadiumAreaId && $stadiumAreaId !== $clubAAreaId) {
+                throw ValidationException::withMessages([
+                    'match' => [__('api.match_result.stadium_area_mismatch')],
+                ]);
+            }
+
             $match->update([
-                'score_club_a' => $scoreA,
-                'score_club_b' => $scoreB,
+                'score_club_a' => null,
+                'score_club_b' => null,
+                'result' => $winner,
                 'status' => 'completed',
             ]);
 
@@ -164,47 +160,116 @@ class MatchRepository implements MatchRepositoryInterface
             $clubBUserIds = $players->where('club_id', $match->club_b_id)->pluck('user_id')->all();
 
             if ($winner === 'club_a') {
-                $this->applyExp($clubAUserIds, $clubBUserIds, $match->club_a_id, $match->club_b_id, 'A');
+                $this->applyWinLoss($clubAUserIds, $clubBUserIds, $match->club_a_id, $match->club_b_id);
             } elseif ($winner === 'club_b') {
-                $this->applyExp($clubBUserIds, $clubAUserIds, $match->club_b_id, $match->club_a_id, 'B');
+                $this->applyWinLoss($clubBUserIds, $clubAUserIds, $match->club_b_id, $match->club_a_id);
             } else {
-                $this->applyDrawExp($clubAUserIds, $clubBUserIds, $match->club_a_id, $match->club_b_id);
+                $this->applyDrawClubExp($match->club_a_id, $match->club_b_id);
             }
 
             return $match->fresh(['clubA', 'clubB', 'stadium', 'pitch', 'matchPlayers.user']);
         });
     }
 
-    private function applyExp(
+    private function applyWinLoss(
         array $winnerUserIds,
         array $loserUserIds,
         int $winnerClubId,
-        int $loserClubId,
-        string $winnerSide
+        int $loserClubId
     ): void {
-        if ($winnerUserIds) {
-            User::whereIn('id', $winnerUserIds)->increment('exp', self::USER_WIN_EXP);
-        }
-        if ($loserUserIds) {
-            User::whereIn('id', $loserUserIds)->increment('exp', self::USER_LOSE_EXP);
-        }
+        $this->applyDivisionProgressForUsers($winnerUserIds, true);
+        $this->applyDivisionProgressForUsers($loserUserIds, false);
+
+        $this->applyWinExpForUsers($winnerUserIds);
 
         Club::where('id', $winnerClubId)->increment('exp', self::CLUB_WIN_EXP);
         Club::where('id', $loserClubId)->increment('exp', self::CLUB_LOSE_EXP);
     }
 
-    private function applyDrawExp(
-        array $clubAUserIds,
-        array $clubBUserIds,
-        int $clubAId,
-        int $clubBId
-    ): void {
-        $allUserIds = array_merge($clubAUserIds, $clubBUserIds);
-        if ($allUserIds) {
-            User::whereIn('id', $allUserIds)->increment('exp', self::USER_DRAW_EXP);
+    private function applyDrawClubExp(int $clubAId, int $clubBId): void
+    {
+        Club::whereIn('id', [$clubAId, $clubBId])->increment('exp', self::CLUB_DRAW_EXP);
+    }
+
+    private function applyWinExpForUsers(array $userIds): void
+    {
+        if (! $userIds) {
+            return;
         }
 
-        Club::whereIn('id', [$clubAId, $clubBId])->increment('exp', self::CLUB_DRAW_EXP);
+        $users = User::query()
+            ->whereIn('id', $userIds)
+            ->where('is_stadium_owner', false)
+            ->with('division')
+            ->get();
+
+        foreach ($users as $user) {
+            $expWin = (int) ($user->division?->exp_win ?? 5);
+            if ($expWin > 0) {
+                $user->increment('exp', $expWin);
+            }
+        }
+    }
+
+    private function applyDivisionProgressForUsers(array $userIds, bool $isWin): void
+    {
+        if (! $userIds) {
+            return;
+        }
+
+        $users = User::query()
+            ->whereIn('id', $userIds)
+            ->where('is_stadium_owner', false)
+            ->with('division')
+            ->get();
+
+        foreach ($users as $user) {
+            $division = $user->division;
+            if (! $division) {
+                continue;
+            }
+
+            $matchesCount = (int) ($division->matches_count ?? 0);
+            $checkpoints = array_values(array_filter($division->checkpoints ?? [], fn ($v) => is_int($v) || ctype_digit((string) $v)));
+            $checkpoints = array_map('intval', $checkpoints);
+
+            $current = (int) ($user->division_current_match ?? 0);
+            $lastCheckpoint = (int) ($user->division_last_checkpoint_match ?? 0);
+
+            if ($isWin) {
+                $current++;
+
+                if (in_array($current, $checkpoints, true)) {
+                    $lastCheckpoint = $current;
+                }
+
+                // Completed division -> move to harder one (10 -> 9 -> ... -> 1)
+                if ($matchesCount > 0 && $current >= $matchesCount) {
+                    $nextDivisionId = Division::query()
+                        ->where('sort_order', ((int) $division->sort_order) - 1)
+                        ->value('id');
+
+                    if ($nextDivisionId) {
+                        $user->update([
+                            'division_id' => $nextDivisionId,
+                            'division_current_match' => 0,
+                            'division_last_checkpoint_match' => 0,
+                        ]);
+                        continue;
+                    }
+                }
+            } else {
+                // Loss: never go below last checkpoint; if between checkpoints, drop by 1.
+                if ($current > $lastCheckpoint) {
+                    $current = max($lastCheckpoint, $current - 1);
+                }
+            }
+
+            $user->update([
+                'division_current_match' => $current,
+                'division_last_checkpoint_match' => $lastCheckpoint,
+            ]);
+        }
     }
 }
 
