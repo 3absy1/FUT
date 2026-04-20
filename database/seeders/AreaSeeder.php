@@ -22,7 +22,7 @@ class AreaSeeder extends Seeder
 
         foreach ($areas as $area) {
             Area::updateOrCreate(
-                ['name->en' => $area['en']],
+                ['name' => $area],
                 [
                     'name' => $area,
                 ]
@@ -30,4 +30,3 @@ class AreaSeeder extends Seeder
         }
     }
 }
-

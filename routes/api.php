@@ -1,12 +1,13 @@
 <?php
 
-use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AreaController;
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ClubController;
 use App\Http\Controllers\Api\ClubMemberController;
 use App\Http\Controllers\Api\ClubRosterController;
 use App\Http\Controllers\Api\ConfigController;
 use App\Http\Controllers\Api\DivisionController;
+use App\Http\Controllers\Api\FriendshipController;
 use App\Http\Controllers\Api\LeaderboardController;
 use App\Http\Controllers\Api\MatchController;
 use App\Http\Controllers\Api\MatchScheduleRequestController;
@@ -14,7 +15,6 @@ use App\Http\Controllers\Api\PitchController;
 use App\Http\Controllers\Api\StadiumAuthController;
 use App\Http\Controllers\Api\StadiumController;
 use App\Http\Controllers\Api\UserController;
-use App\Http\Controllers\Api\FriendshipController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['api.lang', 'api.key'])->group(function () {
@@ -55,6 +55,7 @@ Route::middleware(['api.lang', 'api.key'])->group(function () {
         Route::get('leaderboard/players', [LeaderboardController::class, 'players']);
 
         Route::get('users/search', [FriendshipController::class, 'searchUsers']);
+        Route::get('users/{id}', [UserController::class, 'show'])->whereNumber('id');
         Route::prefix('friends')->group(function () {
             Route::get('/', [FriendshipController::class, 'index']);
             Route::delete('unFriend/{friendUserId}', [FriendshipController::class, 'unfriend']);

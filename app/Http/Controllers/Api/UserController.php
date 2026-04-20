@@ -4,13 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\UpdateProfileRequest;
-use App\Models\GameMatch;
-use App\Models\MatchPlayer;
 use App\Http\Resources\UserResource;
 use App\Http\Traits\ApiResponseTrait;
+use App\Models\GameMatch;
+use App\Models\MatchPlayer;
+use App\Models\User;
+use App\Repositories\UserRepositoryInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use App\Repositories\UserRepositoryInterface;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class UserController extends Controller
@@ -24,6 +25,22 @@ class UserController extends Controller
     public function me(Request $request): JsonResponse
     {
         $user = $request->user();
+        $stats = $this->buildSeasonStats($user->id, $user->position);
+
+        return $this->success([
+            'user' => new UserResource($user),
+            'season_stats' => $stats,
+        ]);
+    }
+
+    public function show(int $id): JsonResponse
+    {
+        $user = User::query()
+            ->whereKey($id)
+            ->where('is_stadium_owner', false)
+            ->with('division')
+            ->firstOrFail();
+
         $stats = $this->buildSeasonStats($user->id, $user->position);
 
         return $this->success([

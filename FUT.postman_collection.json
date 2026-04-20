@@ -433,6 +433,10 @@
                       "    console.log(\"Saved token:\", res.result.token);\r",
                       "} else {\r",
                       "    console.log(\"Token not found in response\", res);\r",
+                      "}\r",
+                      "if (res.result && res.result.refresh_token) {\r",
+                      "    pm.environment.set(\"userRefreshToken\", res.result.refresh_token);\r",
+                      "    pm.collectionVariables.set(\"userRefreshToken\", res.result.refresh_token);\r",
                       "}"
                     ],
                     "type": "text/javascript",
@@ -2501,6 +2505,65 @@
               ]
             },
             {
+              "name": "User by id (profile + season_stats)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "let res = pm.response.json();\r",
+                      "if (res.result && res.result.user && res.result.user.id) {\r",
+                      "    pm.collectionVariables.set('playerUserId', String(res.result.user.id));\r",
+                      "}"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{userAuthToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept-Language",
+                    "value": "en",
+                    "type": "text"
+                  },
+                  {
+                    "key": "X-Api-Key",
+                    "value": "123456",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{Fut_local}}users/{{playerUserId}}",
+                  "host": [
+                    "{{Fut_local}}users"
+                  ],
+                  "path": [
+                    "{{playerUserId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
               "name": "current  matches",
               "event": [
                 {
@@ -2981,6 +3044,49 @@
                   "body": "{\n    \"result\": {\n        \"users\": [\n            {\n                \"id\": 1,\n                \"name\": \"yousef\",\n                \"nick_name\": \"3absy\",\n                \"phone\": \"01224888722\",\n                \"email\": \"yyy@gmail.com\",\n                \"age\": 24,\n                \"is_verified\": true,\n                \"rating\": 0,\n                \"wallet_balance\": \"0.00\",\n                \"exp\": 0,\n                \"level\": {\n                    \"id\": 1,\n                    \"name\": \"Bronze\",\n                    \"min_points\": 0,\n                    \"max_points\": 999,\n                    \"sort_order\": 1\n                },\n                \"fcm_token\": null,\n                \"is_notification\": true,\n                \"created_at\": \"2026-02-21T19:36:13+00:00\"\n            }\n        ]\n    },\n    \"message\": \"Success\",\n    \"statusCode\": 200,\n    \"statusName\": \"OK\"\n}"
                 }
               ]
+            },
+            {
+              "name": "User by id (profile + season_stats)",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{userAuthToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept-Language",
+                    "value": "en",
+                    "type": "text"
+                  },
+                  {
+                    "key": "X-Api-Key",
+                    "value": "123456",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{Fut_local}}users/{{playerUserId}}",
+                  "host": [
+                    "{{Fut_local}}users"
+                  ],
+                  "path": [
+                    "{{playerUserId}}"
+                  ]
+                }
+              },
+              "response": []
             },
             {
               "name": "nearby pending unpaired",
@@ -8411,7 +8517,11 @@
                       "    console.log('Saved stadiumOwnerAuthToken');\r",
                       "} else {\r",
                       "    console.log('Token not found', res);\r",
-                      "}\r"
+                      "}\r",
+                      "if (res.result && res.result.refresh_token) {\r",
+                      "    pm.collectionVariables.set('stadiumOwnerRefreshToken', res.result.refresh_token);\r",
+                      "    pm.environment.set('stadiumOwnerRefreshToken', res.result.refresh_token);\r",
+                      "}"
                     ],
                     "type": "text/javascript",
                     "packages": {},
@@ -8558,6 +8668,73 @@
                   "body": "{\n    \"result\": {\n        \"token\": \"7|hxBp0YorwSUEgZYd3RuaceTtv5l5uamhSN4ICj7I6662a790\",\n        \"token_type\": \"Bearer\",\n        \"user\": {\n            \"id\": 1,\n            \"name\": \"yousef\",\n            \"nick_name\": \"3absy\",\n            \"phone\": \"01224888722\",\n            \"email\": \"yousef@Fut.com\",\n            \"age\": 25,\n            \"is_verified\": true,\n            \"rating\": 0,\n            \"wallet_balance\": \"0.00\",\n            \"fcm_token\": null,\n            \"is_notification\": true\n        }\n    },\n    \"message\": \"Logged in successfully.\",\n    \"statusCode\": 200,\n    \"statusName\": \"OK\"\n}"
                 }
               ]
+            },
+            {
+              "name": "refresh token (stadium)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "let res = pm.response.json();\r",
+                      "if (res.result && res.result.token) {\r",
+                      "    pm.collectionVariables.set('stadiumOwnerAuthToken', res.result.token);\r",
+                      "    pm.environment.set('stadiumOwnerAuthToken', res.result.token);\r",
+                      "    pm.globals.set('stadiumOwnerAuthToken', res.result.token);\r",
+                      "}\r",
+                      "if (res.result && res.result.refresh_token) {\r",
+                      "    pm.collectionVariables.set('stadiumOwnerRefreshToken', res.result.refresh_token);\r",
+                      "    pm.environment.set('stadiumOwnerRefreshToken', res.result.refresh_token);\r",
+                      "}"
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Accept-Language",
+                    "value": "en",
+                    "type": "text"
+                  },
+                  {
+                    "key": "X-Api-Key",
+                    "value": "123456",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"refresh_token\": \"{{stadiumOwnerRefreshToken}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{Fut_live}}auth/refresh",
+                  "host": [
+                    "{{Fut_live}}auth"
+                  ],
+                  "path": [
+                    "refresh"
+                  ]
+                }
+              },
+              "response": []
             },
             {
               "name": "forgot-password",
@@ -9873,6 +10050,18 @@
     {
       "key": "stadiumOwnerAuthToken",
       "value": ""
+    },
+    {
+      "key": "userRefreshToken",
+      "value": ""
+    },
+    {
+      "key": "stadiumOwnerRefreshToken",
+      "value": ""
+    },
+    {
+      "key": "playerUserId",
+      "value": "1"
     },
     {
       "key": "matchId",
