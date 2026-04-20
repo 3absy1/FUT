@@ -19,8 +19,24 @@ class UserResource extends JsonResource
             ? $this->currentDivision()
             : null;
         $level = $this->currentLevel();
+        $positionStats = $this->position === 'goal_keeper'
+            ? [
+                'gk_diving' => $this->gk_diving,
+                'gk_handling' => $this->gk_handling,
+                'gk_kicking' => $this->gk_kicking,
+                'gk_reflexes' => $this->gk_reflexes,
+                'gk_positioning' => $this->gk_positioning,
+            ]
+            : [
+                'pac' => $this->pac,
+                'sho' => $this->sho,
+                'pas' => $this->pas,
+                'dri' => $this->dri,
+                'def' => $this->def,
+                'phy' => $this->phy,
+            ];
 
-        return [
+        return array_merge([
             'id' => $this->id,
             'name' => $this->name,
             'nick_name' => $this->nick_name,
@@ -33,12 +49,9 @@ class UserResource extends JsonResource
             'wallet_balance' => $this->wallet_balance ?? 0,
             'exp' => $this->exp ?? 0,
             'position' => $this->position,
-            'pac' => $this->pac,
-            'sho' => $this->sho,
-            'pas' => $this->pas,
-            'dri' => $this->dri,
-            'def' => $this->def,
-            'phy' => $this->phy,
+            'overall_rating' => method_exists($this->resource, 'overallRating')
+                ? $this->overallRating()
+                : null,
             'goals_scored' => $this->goals_scored ?? 0,
             'assists_count' => $this->assists_count ?? 0,
             'friends_count' => Friend::query()->where('user_id', $this->id)->count(),
@@ -61,6 +74,6 @@ class UserResource extends JsonResource
             'fcm_token' => $this->fcm_token,
             'is_notification' => $this->is_notification,
             'created_at' => $this->created_at?->toIso8601String(),
-        ];
+        ], $positionStats);
     }
 }

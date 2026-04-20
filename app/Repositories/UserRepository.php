@@ -22,6 +22,11 @@ class UserRepository implements UserRepositoryInterface
             'dri' => $data['dri'] ?? $user->dri,
             'def' => $data['def'] ?? $user->def,
             'phy' => $data['phy'] ?? $user->phy,
+            'gk_diving' => $data['gk_diving'] ?? $user->gk_diving,
+            'gk_handling' => $data['gk_handling'] ?? $user->gk_handling,
+            'gk_kicking' => $data['gk_kicking'] ?? $user->gk_kicking,
+            'gk_reflexes' => $data['gk_reflexes'] ?? $user->gk_reflexes,
+            'gk_positioning' => $data['gk_positioning'] ?? $user->gk_positioning,
             'goals_scored' => $data['goals_scored'] ?? $user->goals_scored,
             'assists_count' => $data['assists_count'] ?? $user->assists_count,
         ]);
