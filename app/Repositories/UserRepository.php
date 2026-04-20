@@ -15,6 +15,15 @@ class UserRepository implements UserRepositoryInterface
             'birth_date' => $data['birth_date'] ?? $user->birth_date,
             'fcm_token'  => $data['fcm_token'] ?? $user->fcm_token,
             'area_id'    => array_key_exists('area_id', $data) ? $data['area_id'] : $user->area_id,
+            'position' => $data['position'] ?? $user->position,
+            'pac' => $data['pac'] ?? $user->pac,
+            'sho' => $data['sho'] ?? $user->sho,
+            'pas' => $data['pas'] ?? $user->pas,
+            'dri' => $data['dri'] ?? $user->dri,
+            'def' => $data['def'] ?? $user->def,
+            'phy' => $data['phy'] ?? $user->phy,
+            'goals_scored' => $data['goals_scored'] ?? $user->goals_scored,
+            'assists_count' => $data['assists_count'] ?? $user->assists_count,
         ]);
 
         return $user->fresh();

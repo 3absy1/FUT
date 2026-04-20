@@ -46,6 +46,7 @@ Route::middleware(['api.lang', 'api.key'])->group(function () {
 
     Route::middleware(['auth:sanctum', 'player'])->group(function () {
         Route::get('profile', [UserController::class, 'me']);
+        Route::get('profile/match-history', [UserController::class, 'matchHistory']);
         Route::put('update-profile', [UserController::class, 'updateProfile']);
 
         Route::apiResource('divisions', DivisionController::class);

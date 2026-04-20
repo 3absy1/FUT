@@ -34,6 +34,15 @@ class User extends Authenticatable
         'division_last_checkpoint_match',
         'fcm_token',
         'is_notification',
+        'position',
+        'pac',
+        'sho',
+        'pas',
+        'dri',
+        'def',
+        'phy',
+        'goals_scored',
+        'assists_count',
     ];
 
     protected $hidden = [
@@ -65,6 +74,14 @@ class User extends Authenticatable
             'division_current_match' => 'integer',
             'division_last_checkpoint_match' => 'integer',
             'is_notification' => 'boolean',
+            'pac' => 'integer',
+            'sho' => 'integer',
+            'pas' => 'integer',
+            'dri' => 'integer',
+            'def' => 'integer',
+            'phy' => 'integer',
+            'goals_scored' => 'integer',
+            'assists_count' => 'integer',
         ];
     }
 
