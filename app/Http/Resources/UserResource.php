@@ -46,7 +46,7 @@ class UserResource extends JsonResource
             'age' => $this->birth_date?->age,
             'is_verified' => $this->is_verified,
             'rating' => $this->rating,
-            'wallet_balance' => $this->wallet_balance ?? 0,
+            'wallet_balance' => number_format((float) $this->wallet_balance, 2, '.', ''),
             'exp' => $this->exp ?? 0,
             'position' => $this->position,
             'overall_rating' => method_exists($this->resource, 'overallRating')
