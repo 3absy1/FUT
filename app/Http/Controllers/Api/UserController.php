@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ClubResource;
 use App\Http\Requests\Auth\UpdateProfileRequest;
 use App\Http\Resources\UserResource;
 use App\Http\Traits\ApiResponseTrait;
+use App\Models\ClubMember;
 use App\Models\GameMatch;
 use App\Models\MatchPlayer;
 use App\Models\User;
@@ -30,6 +32,20 @@ class UserController extends Controller
         return $this->success([
             'user' => new UserResource($user),
             'season_stats' => $stats,
+        ]);
+    }
+
+    public function myClub(Request $request): JsonResponse
+    {
+        $membership = ClubMember::query()
+            ->where('user_id', $request->user()->id)
+            ->where('is_active', true)
+            ->with('club.area')
+            ->latest()
+            ->first();
+
+        return $this->success([
+            'club' => $membership?->club ? new ClubResource($membership->club) : null,
         ]);
     }
 
