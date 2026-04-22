@@ -21,8 +21,8 @@ interface ClubRepositoryInterface
 
     public function searchMembers(Club $club, User $actor, ?string $q = null): LengthAwarePaginator;
 
-    public function inviteMembers(Club $club, User $actor, array $userIds): array;
-
+    public function inviteMembers(Club $club, User $actor, array $userIds, string $role = 'player'): array;
+    
     public function myPendingInvites(User $user): LengthAwarePaginator;
 
     public function acceptInvite(User $user, ClubMember $membership): ClubMember;

@@ -24,6 +24,8 @@ class ClubRepository implements ClubRepositoryInterface
 
     public function create(User $owner, array $data): Club
     {
+        $creatorRole = $data['role'] ?? 'captain';
+
         $club = Club::create([
             'name' => $data['name'],
             'icon' => $data['icon'] ?? null,
@@ -36,7 +38,7 @@ class ClubRepository implements ClubRepositoryInterface
         ClubMember::create([
             'club_id' => $club->id,
             'user_id' => $owner->id,
-            'role' => 'captain',
+            'role' => $creatorRole,
             'is_active' => true,
         ]);
 
@@ -82,9 +84,14 @@ class ClubRepository implements ClubRepositoryInterface
             ->paginate(10);
     }
 
-    public function inviteMembers(Club $club, User $actor, array $userIds): array
+    public function inviteMembers(Club $club, User $actor, array $userIds, string $role = 'player'): array
     {
         $this->assertIsCaptain($actor, $club);
+
+        // If inviting a captain/coach, check availability BEFORE creating anything
+        if (in_array($role, ['captain', 'coach'], true)) {
+            $this->assertRoleAvailability($club, $role);
+        }
 
         $userIds = collect($userIds)
             ->map(fn ($id) => (int) $id)
@@ -97,6 +104,13 @@ class ClubRepository implements ClubRepositoryInterface
             return [];
         }
 
+        // For captain/coach, only 1 invite allowed
+        if (in_array($role, ['captain', 'coach'], true) && $userIds->count() > 1) {
+            throw ValidationException::withMessages([
+                'user_ids' => ["Only one {$role} can be invited at a time."],
+            ]);
+        }
+
         $existingMemberships = ClubMember::query()
             ->where('club_id', $club->id)
             ->whereIn('user_id', $userIds->all())
@@ -105,7 +119,7 @@ class ClubRepository implements ClubRepositoryInterface
 
         $toInvite = $userIds->reject(fn ($id) => in_array($id, $existingMemberships, true))->values();
 
-        $activeCount = $club->activeMembers()->count();
+        $activeCount  = $club->activeMembers()->count();
         $pendingCount = ClubMember::query()
             ->where('club_id', $club->id)
             ->where('is_active', false)
@@ -120,12 +134,11 @@ class ClubRepository implements ClubRepositoryInterface
         }
 
         $created = [];
-
         foreach ($toInvite as $userId) {
             $created[] = ClubMember::create([
-                'club_id' => $club->id,
-                'user_id' => $userId,
-                'role' => 'player',
+                'club_id'   => $club->id,
+                'user_id'   => $userId,
+                'role'      => $role,        // ← use passed role
                 'is_active' => false,
             ]);
         }
@@ -159,6 +172,8 @@ class ClubRepository implements ClubRepositoryInterface
                 'membership' => [__('api.club.max_players_reached')],
             ]);
         }
+
+        $this->assertRoleAvailability($club, $membership->role, $membership->id);
 
         $membership->update([
             'is_active' => true,
@@ -215,6 +230,26 @@ class ClubRepository implements ClubRepositoryInterface
         if ((int) $membership->user_id !== (int) $user->id) {
             throw ValidationException::withMessages([
                 'membership' => [__('api.club.invite_not_for_user')],
+            ]);
+        }
+    }
+
+    private function assertRoleAvailability(Club $club, string $role, ?int $ignoreMembershipId = null): void
+    {
+        if (! in_array($role, ['captain', 'coach'], true)) {
+            return;
+        }
+
+        $hasRoleAlready = ClubMember::query()
+            ->where('club_id', $club->id)
+            ->where('role', $role)
+            ->where('is_active', true)
+            ->when($ignoreMembershipId, fn ($query) => $query->where('id', '!=', $ignoreMembershipId))
+            ->exists();
+
+        if ($hasRoleAlready) {
+            throw ValidationException::withMessages([
+                'role' => ["Only one {$role} is allowed per club."],
             ]);
         }
     }

@@ -25,10 +25,13 @@ class ClubMemberController extends Controller
      */
     public function invite(InviteClubMembersRequest $request, Club $club): JsonResponse
     {
+        $validated = $request->validated();
+
         $memberships = $this->clubRepository->inviteMembers(
             $club,
             $request->user(),
-            $request->validated()['user_ids']
+            $validated['user_ids'],
+            $validated['role'],
         );
 
         $memberships = new \Illuminate\Database\Eloquent\Collection($memberships);

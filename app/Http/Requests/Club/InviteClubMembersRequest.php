@@ -14,8 +14,9 @@ class InviteClubMembersRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_ids' => ['required', 'array', 'min:1'],
+            'user_ids'   => ['required', 'array', 'min:1'],
             'user_ids.*' => ['integer', 'distinct', 'exists:users,id'],
+            'role'       => ['required', 'string', 'in:player,coach,captain'],
         ];
     }
 }
