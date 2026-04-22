@@ -2307,6 +2307,49 @@
               ]
             },
             {
+              "name": "profile club",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{userAuthToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept-Language",
+                    "value": "en",
+                    "type": "text"
+                  },
+                  {
+                    "key": "X-Api-Key",
+                    "value": "123456",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{Fut_local}}profile/club",
+                  "host": [
+                    "{{Fut_local}}profile"
+                  ],
+                  "path": [
+                    "club"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
               "name": "profile match history",
               "request": {
                 "auth": {
@@ -2666,6 +2709,50 @@
                   ],
                   "path": [
                     "players"
+                  ],
+                  "query": [
+                    {
+                      "key": "per_page",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "leaderboard clubs (top3 + my club + paginated)",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{userAuthToken}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept-Language",
+                    "value": "en",
+                    "type": "text"
+                  },
+                  {
+                    "key": "X-Api-Key",
+                    "value": "123456",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{Fut_local}}leaderboard/clubs?per_page=20",
+                  "host": [
+                    "{{Fut_local}}leaderboard"
+                  ],
+                  "path": [
+                    "clubs"
                   ],
                   "query": [
                     {

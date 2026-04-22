@@ -54,6 +54,7 @@ Route::middleware(['api.lang', 'api.key'])->group(function () {
         Route::apiResource('clubs', ClubController::class);
 
         Route::get('leaderboard/players', [LeaderboardController::class, 'players']);
+        Route::get('leaderboard/clubs', [LeaderboardController::class, 'clubs']);
 
         Route::get('users/search', [FriendshipController::class, 'searchUsers']);
         Route::get('users/{id}', [UserController::class, 'show'])->whereNumber('id');

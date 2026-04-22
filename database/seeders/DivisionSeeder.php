@@ -34,6 +34,7 @@ class DivisionSeeder extends Seeder
                     'matches_count' => 10,
                     'checkpoints' => $checkpointMap[$division],
                     'exp_win' => 5,
+                    'draw_exp' => 2,
                 ]
             );
         }

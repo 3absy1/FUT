@@ -14,10 +14,6 @@ use Illuminate\Validation\ValidationException;
 
 class MatchRepository implements MatchRepositoryInterface
 {
-    private const CLUB_WIN_EXP = 50;
-    private const CLUB_LOSE_EXP = 10;
-    private const CLUB_DRAW_EXP = 20;
-
     public function currentForUser(User $user): ?GameMatch
     {
         return GameMatch::query()
@@ -164,7 +160,7 @@ class MatchRepository implements MatchRepositoryInterface
             } elseif ($winner === 'club_b') {
                 $this->applyWinLoss($clubBUserIds, $clubAUserIds, $match->club_b_id, $match->club_a_id);
             } else {
-                $this->applyDrawClubExp($match->club_a_id, $match->club_b_id);
+                $this->applyDraw($clubAUserIds, $clubBUserIds, $match->club_a_id, $match->club_b_id);
             }
 
             return $match->fresh(['clubA', 'clubB', 'stadium', 'pitch', 'matchPlayers.user']);
@@ -180,21 +176,35 @@ class MatchRepository implements MatchRepositoryInterface
         $this->applyDivisionProgressForUsers($winnerUserIds, true);
         $this->applyDivisionProgressForUsers($loserUserIds, false);
 
-        $this->applyWinExpForUsers($winnerUserIds);
+        $winnerClubExp = $this->applyWinExpForUsers($winnerUserIds);
 
-        Club::where('id', $winnerClubId)->increment('exp', self::CLUB_WIN_EXP);
-        Club::where('id', $loserClubId)->increment('exp', self::CLUB_LOSE_EXP);
+        if ($winnerClubExp > 0) {
+            Club::where('id', $winnerClubId)->increment('exp', $winnerClubExp);
+        }
     }
 
-    private function applyDrawClubExp(int $clubAId, int $clubBId): void
+    private function applyDraw(
+        array $clubAUserIds,
+        array $clubBUserIds,
+        int $clubAId,
+        int $clubBId
+    ): void
     {
-        Club::whereIn('id', [$clubAId, $clubBId])->increment('exp', self::CLUB_DRAW_EXP);
+        $clubAExp = $this->applyDrawExpForUsers($clubAUserIds);
+        $clubBExp = $this->applyDrawExpForUsers($clubBUserIds);
+
+        if ($clubAExp > 0) {
+            Club::where('id', $clubAId)->increment('exp', $clubAExp);
+        }
+        if ($clubBExp > 0) {
+            Club::where('id', $clubBId)->increment('exp', $clubBExp);
+        }
     }
 
-    private function applyWinExpForUsers(array $userIds): void
+    private function applyWinExpForUsers(array $userIds): int
     {
         if (! $userIds) {
-            return;
+            return 0;
         }
 
         $users = User::query()
@@ -203,12 +213,40 @@ class MatchRepository implements MatchRepositoryInterface
             ->with('division')
             ->get();
 
+        $totalAwarded = 0;
         foreach ($users as $user) {
             $expWin = (int) ($user->division?->exp_win ?? 5);
             if ($expWin > 0) {
                 $user->increment('exp', $expWin);
+                $totalAwarded += $expWin;
             }
         }
+
+        return $totalAwarded;
+    }
+
+    private function applyDrawExpForUsers(array $userIds): int
+    {
+        if (! $userIds) {
+            return 0;
+        }
+
+        $users = User::query()
+            ->whereIn('id', $userIds)
+            ->where('is_stadium_owner', false)
+            ->with('division')
+            ->get();
+
+        $totalAwarded = 0;
+        foreach ($users as $user) {
+            $drawExp = (int) ($user->division?->draw_exp ?? 2);
+            if ($drawExp > 0) {
+                $user->increment('exp', $drawExp);
+                $totalAwarded += $drawExp;
+            }
+        }
+
+        return $totalAwarded;
     }
 
     private function applyDivisionProgressForUsers(array $userIds, bool $isWin): void

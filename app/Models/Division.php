@@ -8,7 +8,7 @@ class Division extends Model
 {
     protected $table = 'levels';
 
-    protected $fillable = ['name', 'matches_count', 'checkpoints', 'exp_win', 'sort_order'];
+    protected $fillable = ['name', 'matches_count', 'checkpoints', 'exp_win', 'draw_exp', 'sort_order'];
 
     protected function casts(): array
     {
@@ -17,6 +17,7 @@ class Division extends Model
             'matches_count' => 'integer',
             'checkpoints' => 'array',
             'exp_win' => 'integer',
+            'draw_exp' => 'integer',
             'sort_order' => 'integer',
         ];
     }
