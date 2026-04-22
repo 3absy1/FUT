@@ -19,6 +19,7 @@ class StoreClubRequest extends FormRequest
             'max_players' => ['nullable', 'integer', 'min:1', 'max:50'],
             'rating' => ['nullable', 'numeric', 'min:0', 'max:5'],
             'area_id' => ['nullable', 'integer', 'exists:areas,id'],
+            'role' => ['required', 'string', 'in:player,coach,captain'],
         ];
     }
 }
