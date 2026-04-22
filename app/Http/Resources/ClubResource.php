@@ -79,26 +79,17 @@ class ClubResource extends JsonResource
             ->latest('id')
             ->first();
 
-        if (! $coachMembership) {
-            $coachMembership = ClubMember::query()
-                ->with('user:id,name,nick_name,phone')
-                ->where('club_id', $this->id)
-                ->where('is_active', true)
-                ->where('role', 'captain')
-                ->latest('id')
-                ->first();
-        }
-
         $coachUser = $coachMembership?->user;
+
         if (! $coachUser) {
             return null;
         }
 
         return [
-            'id' => $coachUser->id,
-            'name' => $coachUser->name,
+            'id'       => $coachUser->id,
+            'name'     => $coachUser->name,
             'nick_name' => $coachUser->nick_name,
-            'phone' => $coachUser->phone,
+            'phone'    => $coachUser->phone,
         ];
     }
 }
