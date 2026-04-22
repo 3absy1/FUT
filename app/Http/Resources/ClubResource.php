@@ -18,11 +18,24 @@ class ClubResource extends JsonResource
             'max_players' => $this->max_players,
             'rating' => (float) $this->rating,
             'exp' => (int) ($this->exp ?? 0),
+            'total_matches' => $this->getTotalMatches(),
             'total_wins' => $this->getTotalWins(),
             'win_rate' => $this->getWinRate(),
             'coach' => $this->getCoach(),
             'area' => new AreaResource($this->whenLoaded('area')),
         ];
+    }
+
+    private function getTotalMatches(): int
+    {
+        return GameMatch::query()
+            ->whereNotNull('result')
+            ->where(function ($query) {
+                $query
+                    ->where('club_a_id', $this->id)
+                    ->orWhere('club_b_id', $this->id);
+            })
+            ->count();
     }
 
     private function getTotalWins(): int
@@ -47,14 +60,7 @@ class ClubResource extends JsonResource
 
     private function getWinRate(): float
     {
-        $totalMatches = GameMatch::query()
-            ->whereNotNull('result')
-            ->where(function ($query) {
-                $query
-                    ->where('club_a_id', $this->id)
-                    ->orWhere('club_b_id', $this->id);
-            })
-            ->count();
+        $totalMatches = $this->getTotalMatches();
 
         if ($totalMatches === 0) {
             return 0.0;
