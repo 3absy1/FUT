@@ -39,7 +39,7 @@
                         <div style="font-weight:600; font-size:15px;">{{ $club->name }}</div>
                         <div style="font-size:11px;color:var(--text-muted);">ID #{{ $club->id }}</div>
                     </td>
-                    <td class="muted">{{ $club->area?->name ?? '—' }}</td>
+                    <td class="muted">{{ $club->area?->localized_name ?? '—' }}</td>
                     <td>
                         <span style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--accent);">{{ number_format($club->rating ?? 0, 1) }}</span>
                     </td>

@@ -22,7 +22,7 @@
         <div class="card-title" style="margin-bottom:16px;">Club Info</div>
         @php
         $info = [
-            'Area'        => $club->area?->name ?? '—',
+            'Area'        => $club->area?->localized_name ?? '—',
             'Rating'      => number_format($club->rating ?? 0, 2),
             'EXP'         => number_format($club->exp ?? 0),
             'Max Players' => $club->max_players ?? '—',
